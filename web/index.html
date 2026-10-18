@@ -13,6 +13,14 @@
     p { line-height: 1.6; }
     .muted { color: #566575; }
     .card { background: #fff; border: 1px solid #dbe2e9; border-radius: 14px; padding: 24px; margin-top: 22px; box-shadow: 0 3px 14px #1826390b; }
+    [hidden] { display: none !important; }
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 20px 0; }
+    .feature { border: 1px solid #dbe2e9; border-radius: 10px; padding: 16px; }
+    .feature h3 { margin: 0 0 8px; }
+    .feature p { margin: 0; }
+    .steps { line-height: 1.8; padding-left: 24px; }
+    .primary-link { display: inline-block; background: #1767b6; color: #fff; border-radius: 8px; padding: 12px 20px; font-weight: 700; text-decoration: none; }
+    .primary-link:hover, .primary-link:focus-visible { background: #10518f; }
     label { display: block; font-weight: 650; margin: 16px 0 8px; }
     select, input[type=file] { width: 100%; box-sizing: border-box; padding: 11px; border: 1px solid #aab8c7; border-radius: 8px; background: white; font: inherit; }
     fieldset { border: 0; padding: 0; margin: 22px 0 0; }
@@ -47,8 +55,35 @@
     <option value="en">English</option>
   </select>
   <h1 data-i18n="pageTitle">WAF Compass</h1>
-  <p class="muted" data-i18n="intro">防ぎたい攻撃を選び、ルールの評価順とテスト結果を確認します。</p>
-  <section class="card">
+  <p class="muted" data-i18n="intro">AWS WAF と ModSecurity のルールを、評価順と固定テストの観点から確認します。</p>
+  <div id="public-intro">
+    <section class="card">
+      <h2 data-i18n="aboutTitle">WAF Compass でできること</h2>
+      <p data-i18n="aboutBody">ルール定義をアップロードし、防ぎたい攻撃の種類を選ぶと、確認結果を日本語または英語の文章で受け取れます。</p>
+      <div class="feature-grid">
+        <article class="feature">
+          <h3 data-i18n="awsFeatureTitle">AWS WAF</h3>
+          <p data-i18n="awsFeatureBody">GetWebACL の JSON を静的に確認し、ルールの優先順位や設定上の懸念を説明します。実際の遮断は測定しません。</p>
+        </article>
+        <article class="feature">
+          <h3 data-i18n="modFeatureTitle">ModSecurity</h3>
+          <p data-i18n="modFeatureBody">ルール一式を隔離した Apache / ModSecurity 2 環境で試し、固定の攻撃・正常リクエストの結果を示します。</p>
+        </article>
+      </div>
+      <a class="primary-link" href="/login" data-i18n="loginCta">ログインして評価を始める</a>
+      <p class="muted" data-i18n="freeLimit">現在は無料で、評価は利用者ごとに日本時間で1日1回までです。利用にはログインが必要です。</p>
+    </section>
+    <section class="card">
+      <h2 data-i18n="howTitle">使い方</h2>
+      <ol class="steps">
+        <li data-i18n="stepOne">ログインして、AWS WAF または ModSecurity を選びます。</li>
+        <li data-i18n="stepTwo">1 MiB 以下のルールファイルを指定し、確認したい攻撃の種類を選びます。</li>
+        <li data-i18n="stepThree">評価結果で、ルールの分析と固定ケースの結果を確認します。</li>
+      </ol>
+      <p class="notice" data-i18n="publicNotice">WAF Compass はアプリケーション全体の脆弱性診断ではありません。AWS WAF の結果は静的レビューであり、ModSecurity の測定は固定ケースと隔離環境に限られます。</p>
+    </section>
+  </div>
+  <section id="evaluation-section" class="card" hidden>
     <form id="evaluation-form">
       <h2 data-i18n="newEvaluation">新しい評価</h2>
       <label for="kind" data-i18n="ruleKind">ルールの種類</label>
@@ -74,13 +109,13 @@
       <p class="muted"><span data-i18n="owaspScope">固定ケースは主に A01 の SSRF・パストラバーサルと A05 のインジェクションを扱います。その他の Top 10 リスクはアプリケーション側の検証が必要です。</span> <a href="https://top10.owasp.org/2025/0x00_2025-Introduction/" target="_blank" rel="noopener noreferrer">OWASP Top 10:2025</a></p>
       <p class="notice" data-i18n="notice">複数選んでも評価は1日1回分です。AWS WAF の静的レビューは実際の遮断確認ではありません。ModSecurity は Apache 用 ModSecurity 2 の隔離環境で固定ケースを測定します。本番が ModSecurity 3 などの場合、動作が異なる可能性があります。OWASP Top 10 全体の網羅やアプリケーションの安全性は証明できません。</p>
       <div id="turnstile-container"></div>
-      <label class="legal-agreement"><input id="terms-accepted" type="checkbox" required><span><span data-i18n="agreementStart"></span><a href="/terms" data-i18n="termsLink">利用規約</a><span data-i18n="agreementMiddle">に同意し、</span><a href="/privacy" data-i18n="privacyLink">プライバシーポリシー</a><span data-i18n="agreementEnd">を確認しました。</span></span></label>
+      <label class="legal-agreement"><input id="terms-accepted" type="checkbox" required><span><span data-i18n="agreementStart"></span><a href="/terms" data-legal-link data-i18n="termsLink">利用規約</a><span data-i18n="agreementMiddle">に同意し、</span><a href="/privacy" data-legal-link data-i18n="privacyLink">プライバシーポリシー</a><span data-i18n="agreementEnd">を確認しました。</span></span></label>
       <button id="submit" type="submit" data-i18n="submit">評価する</button>
       <p id="status" class="status" role="status" aria-live="polite"></p>
     </form>
   </section>
   <section id="report" class="card" hidden aria-live="polite"></section>
-  <footer class="muted"><a href="/terms" data-i18n="termsLink">利用規約</a><a href="/privacy" data-i18n="privacyLink">プライバシーポリシー</a></footer>
+  <footer class="muted"><a href="/terms" data-legal-link data-i18n="termsLink">利用規約</a><a href="/privacy" data-legal-link data-i18n="privacyLink">プライバシーポリシー</a></footer>
 </main>
 <script src="/config.js"></script>
 <script>
@@ -92,29 +127,56 @@
   const report = document.querySelector('#report');
   const language = document.querySelector('#language');
   const authStatus = document.querySelector('#auth-status');
+  const publicIntro = document.querySelector('#public-intro');
+  const evaluationSection = document.querySelector('#evaluation-section');
   let authenticated = false;
+  let currentUser = null;
+  let authError = false;
   let turnstileToken = '';
   const siteKey = window.WAF_CONFIG?.turnstileSiteKey;
+  function renderAuth() {
+    publicIntro.hidden = authenticated;
+    evaluationSection.hidden = !authenticated;
+    button.disabled = !authenticated;
+    authStatus.hidden = !authenticated && !authError;
+    authStatus.replaceChildren();
+    if (authenticated) {
+      authStatus.append(document.createTextNode((currentUser || (language.value === 'ja' ? 'ログイン中' : 'Signed in')) + ' · '));
+      const link = document.createElement('a');
+      link.href = '/logout';
+      link.textContent = language.value === 'ja' ? 'ログアウト' : 'Sign out';
+      authStatus.append(link);
+    } else if (authError) {
+      authStatus.textContent = language.value === 'ja' ? 'ログイン状態を確認できません。再読み込みしてください。' : 'Could not check sign-in status. Please reload.';
+    }
+  }
   async function refreshAuth() {
     try {
       const response = await fetch('/api/me', {credentials: 'same-origin'});
+      if (!response.ok) throw new Error('Could not check sign-in status');
       const data = await response.json();
       authenticated = data.authenticated === true;
-      authStatus.textContent = authenticated ? (data.user || (language.value === 'ja' ? 'ログイン中' : 'Signed in')) + ' · ' : '';
-      const link = document.createElement('a');
-      link.href = authenticated ? '/logout' : '/login';
-      link.textContent = authenticated ? (language.value === 'ja' ? 'ログアウト' : 'Sign out') : (language.value === 'ja' ? 'ログインして評価する' : 'Sign in to evaluate');
-      authStatus.append(link);
-      button.disabled = !authenticated;
+      currentUser = data.user || null;
+      authError = false;
+      renderAuth();
+      if (authenticated) loadTurnstile();
     } catch {
-      authStatus.textContent = language.value === 'ja' ? 'ログイン状態を確認できません。' : 'Could not check sign-in status.';
-      button.disabled = true;
+      authenticated = false;
+      authError = true;
+      renderAuth();
     }
   }
+  renderAuth();
   refreshAuth();
   const messages = {
     ja: {
-      languageLabel: '表示・レポート言語', pageTitle: 'WAF Compass', intro: '防ぎたい攻撃を選び、ルールの評価順とテスト結果を確認します。',
+      languageLabel: '表示・レポート言語', pageTitle: 'WAF Compass', intro: 'AWS WAF と ModSecurity のルールを、評価順と固定テストの観点から確認します。',
+      aboutTitle: 'WAF Compass でできること', aboutBody: 'ルール定義をアップロードし、防ぎたい攻撃の種類を選ぶと、確認結果を日本語または英語の文章で受け取れます。',
+      awsFeatureTitle: 'AWS WAF', awsFeatureBody: 'GetWebACL の JSON を静的に確認し、ルールの優先順位や設定上の懸念を説明します。実際の遮断は測定しません。',
+      modFeatureTitle: 'ModSecurity', modFeatureBody: 'ルール一式を隔離した Apache / ModSecurity 2 環境で試し、固定の攻撃・正常リクエストの結果を示します。',
+      loginCta: 'ログインして評価を始める', freeLimit: '現在は無料で、評価は利用者ごとに日本時間で1日1回までです。利用にはログインが必要です。',
+      howTitle: '使い方', stepOne: 'ログインして、AWS WAF または ModSecurity を選びます。', stepTwo: '1 MiB 以下のルールファイルを指定し、確認したい攻撃の種類を選びます。', stepThree: '評価結果で、ルールの分析と固定ケースの結果を確認します。',
+      publicNotice: 'WAF Compass はアプリケーション全体の脆弱性診断ではありません。AWS WAF の結果は静的レビューであり、ModSecurity の測定は固定ケースと隔離環境に限られます。',
       termsLink: '利用規約', privacyLink: 'プライバシーポリシー', agreementStart: '', agreementMiddle: 'に同意し、', agreementEnd: 'を確認しました。', agreementError: '利用規約への同意を確認してください。',
       newEvaluation: '新しい評価', ruleKind: 'ルールの種類', awsWafOption: 'AWS WAF（ルール定義の静的レビュー）', modsecurityOption: 'ModSecurity（隔離環境で実行テスト）',
       ruleFile: 'ルールファイル', fileHelp: 'AWS WAF は GetWebACL の JSON、ModSecurity は Include を展開した読み込み順のルール一式を指定してください。上限 1 MiB。',
@@ -128,7 +190,13 @@
       names: {sqli: 'SQL インジェクション', xss: 'クロスサイトスクリプティング', path_traversal: 'パストラバーサル', cmdi: 'コマンドインジェクション', ssrf: 'SSRF', xxe: 'XXE', ssti: 'テンプレートインジェクション'},
     },
     en: {
-      languageLabel: 'Display and report language', pageTitle: 'WAF Compass', intro: 'Choose attack types and review rule order and test results.',
+      languageLabel: 'Display and report language', pageTitle: 'WAF Compass', intro: 'Review AWS WAF and ModSecurity rules, their order, and bounded test results.',
+      aboutTitle: 'What WAF Compass does', aboutBody: 'Upload a ruleset and choose the attack types you care about. Receive an explanation of the findings in Japanese or English.',
+      awsFeatureTitle: 'AWS WAF', awsFeatureBody: 'Statically review a GetWebACL JSON response for rule priority and configuration concerns. This does not measure live blocking.',
+      modFeatureTitle: 'ModSecurity', modFeatureBody: 'Run fixed attack and benign requests against the rules in an isolated Apache / ModSecurity 2 environment.',
+      loginCta: 'Sign in to start an evaluation', freeLimit: 'Currently free, with one evaluation per user per Japan Standard Time day. Sign-in is required.',
+      howTitle: 'How it works', stepOne: 'Sign in and choose AWS WAF or ModSecurity.', stepTwo: 'Upload a rules file of up to 1 MiB and select the attack types to check.', stepThree: 'Review the rule analysis and fixed-case results.',
+      publicNotice: 'WAF Compass is not a full application vulnerability scan. AWS WAF results are a static review; ModSecurity measurements cover only fixed cases in an isolated environment.',
       termsLink: 'Terms of Service', privacyLink: 'Privacy Policy', agreementStart: 'I agree to the ', agreementMiddle: ' and have read the ', agreementEnd: '.', agreementError: 'Please accept the Terms of Service.',
       newEvaluation: 'New evaluation', ruleKind: 'Rule type', awsWafOption: 'AWS WAF (static rule review)', modsecurityOption: 'ModSecurity (isolated execution test)',
       ruleFile: 'Rule file', fileHelp: 'Provide a GetWebACL JSON response for AWS WAF, or a ModSecurity ruleset with includes flattened in load order. Limit: 1 MiB.',
@@ -148,7 +216,8 @@
     document.title = t('pageTitle');
     for (const item of document.querySelectorAll('[data-i18n]')) item.textContent = t(item.dataset.i18n);
     for (const item of document.querySelectorAll('[data-attack-name]')) item.textContent = t('names')[item.dataset.attackName];
-    for (const item of document.querySelectorAll('a[href^="/terms"], a[href^="/privacy"]')) item.hash = language.value === 'en' ? '#en' : '#ja';
+    for (const item of document.querySelectorAll('a[data-legal-link]')) item.hash = language.value === 'en' ? '#en' : '#ja';
+    renderAuth();
   }
   language.addEventListener('change', applyLanguage);
   applyLanguage();
@@ -165,7 +234,10 @@
       'expired-callback': () => { turnstileToken = ''; },
     });
   }
-  if (siteKey) {
+  let turnstileLoaded = false;
+  function loadTurnstile() {
+    if (!siteKey || turnstileLoaded) return;
+    turnstileLoaded = true;
     const script = document.createElement('script');
     script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
     script.async = true;

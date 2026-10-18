@@ -1,6 +1,6 @@
 # WAF Compass
 
-Go components for reviewing AWS WAF and ModSecurity rules with Bedrock, and for running bounded ModSecurity request tests. The browser form is in `web/index.html`. The authenticated HTTP entry point is in `webfunction/index.js`, and Terraform is in `infra/terraform`. Terraform separates foundational resources from the public application with `deploy_application`.
+Go components for reviewing AWS WAF and ModSecurity rules with Bedrock, and for running bounded ModSecurity request tests. The public introduction and authenticated browser form are in `web/index.html`. The authenticated HTTP entry point is in `webfunction/index.js`, and Terraform is in `infra/terraform`. Terraform separates foundational resources from the public application with `deploy_application`.
 
 ## What each result means
 
