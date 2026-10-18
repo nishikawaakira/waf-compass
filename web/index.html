@@ -49,8 +49,8 @@
 <body>
 <main>
   <p id="auth-status" class="muted" aria-live="polite"></p>
-  <label for="language" data-i18n="languageLabel">表示・レポート言語</label>
-  <select id="language" name="language" aria-label="Language">
+  <label for="language">Language / 言語</label>
+  <select id="language" name="language">
     <option value="ja">日本語</option>
     <option value="en">English</option>
   </select>
@@ -170,7 +170,7 @@
   refreshAuth();
   const messages = {
     ja: {
-      languageLabel: '表示・レポート言語', pageTitle: 'WAF Compass', intro: 'AWS WAF と ModSecurity のルールを、評価順と固定テストの観点から確認します。',
+      pageTitle: 'WAF Compass', intro: 'AWS WAF と ModSecurity のルールを、評価順と固定テストの観点から確認します。',
       aboutTitle: 'WAF Compass でできること', aboutBody: 'ルール定義をアップロードし、防ぎたい攻撃の種類を選ぶと、確認結果を日本語または英語の文章で受け取れます。',
       awsFeatureTitle: 'AWS WAF', awsFeatureBody: 'GetWebACL の JSON を静的に確認し、ルールの優先順位や設定上の懸念を説明します。実際の遮断は測定しません。',
       modFeatureTitle: 'ModSecurity', modFeatureBody: 'ルール一式を隔離した Apache / ModSecurity 2 環境で試し、固定の攻撃・正常リクエストの結果を示します。',
@@ -190,7 +190,7 @@
       names: {sqli: 'SQL インジェクション', xss: 'クロスサイトスクリプティング', path_traversal: 'パストラバーサル', cmdi: 'コマンドインジェクション', ssrf: 'SSRF', xxe: 'XXE', ssti: 'テンプレートインジェクション'},
     },
     en: {
-      languageLabel: 'Display and report language', pageTitle: 'WAF Compass', intro: 'Review AWS WAF and ModSecurity rules, their order, and bounded test results.',
+      pageTitle: 'WAF Compass', intro: 'Review AWS WAF and ModSecurity rules, their order, and bounded test results.',
       aboutTitle: 'What WAF Compass does', aboutBody: 'Upload a ruleset and choose the attack types you care about. Receive an explanation of the findings in Japanese or English.',
       awsFeatureTitle: 'AWS WAF', awsFeatureBody: 'Statically review a GetWebACL JSON response for rule priority and configuration concerns. This does not measure live blocking.',
       modFeatureTitle: 'ModSecurity', modFeatureBody: 'Run fixed attack and benign requests against the rules in an isolated Apache / ModSecurity 2 environment.',
