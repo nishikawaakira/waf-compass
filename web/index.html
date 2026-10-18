@@ -43,16 +43,18 @@
     pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.55; }
     .legal-agreement { display: flex; align-items: start; gap: 10px; font-weight: 400; line-height: 1.5; }
     .legal-agreement input { flex: none; margin-top: 3px; }
+    .language-flags { font-size: 1.5rem; line-height: 1; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     footer { margin-top: 28px; display: flex; gap: 18px; flex-wrap: wrap; }
   </style>
 </head>
 <body>
 <main>
   <p id="auth-status" class="muted" aria-live="polite"></p>
-  <label for="language">Language / 言語</label>
+  <label for="language"><span class="language-flags" aria-hidden="true">🇯🇵 🇬🇧</span><span class="sr-only">Language / 言語</span></label>
   <select id="language" name="language">
-    <option value="ja">日本語</option>
-    <option value="en">English</option>
+    <option value="ja">🇯🇵 日本語</option>
+    <option value="en">🇬🇧 English</option>
   </select>
   <h1 data-i18n="pageTitle">WAF Compass</h1>
   <p class="muted" data-i18n="intro">AWS WAF と ModSecurity のルールを、評価順と固定テストの観点から確認します。</p>
