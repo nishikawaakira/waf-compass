@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WAF Compass</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, -apple-system, sans-serif; background: #f5f7fa; color: #17212d; }
+    body { margin: 0; }
+    main { max-width: 820px; margin: 0 auto; padding: 32px 20px 72px; }
+    h1 { font-size: 2rem; margin: 0 0 8px; }
+    h2 { font-size: 1.3rem; margin: 0 0 14px; }
+    p { line-height: 1.6; }
+    .muted { color: #566575; }
+    .card { background: #fff; border: 1px solid #dbe2e9; border-radius: 14px; padding: 24px; margin-top: 22px; box-shadow: 0 3px 14px #1826390b; }
+    label { display: block; font-weight: 650; margin: 16px 0 8px; }
+    select, input[type=file] { width: 100%; box-sizing: border-box; padding: 11px; border: 1px solid #aab8c7; border-radius: 8px; background: white; font: inherit; }
+    fieldset { border: 0; padding: 0; margin: 22px 0 0; }
+    legend { font-weight: 700; margin-bottom: 9px; }
+    .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+    .choice { display: flex; align-items: center; gap: 9px; margin: 0; border: 1px solid #d5dfe8; border-radius: 9px; padding: 12px; cursor: pointer; }
+    .choice:has(input:checked) { border-color: #1963ae; background: #edf5ff; }
+    input[type=checkbox] { width: 18px; height: 18px; accent-color: #1963ae; }
+    button { background: #1767b6; color: white; border: 0; border-radius: 8px; padding: 12px 20px; font: inherit; font-weight: 700; cursor: pointer; }
+    button:disabled { background: #8293a3; cursor: not-allowed; }
+    .notice { border-left: 4px solid #d39818; background: #fff9e9; padding: 10px 14px; }
+    .status { min-height: 1.5em; margin-top: 14px; }
+    .error { color: #a32121; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 999px; background: #e7edf4; font-size: .82rem; font-weight: 700; }
+    .badge.ok { background: #dcf5e5; color: #146338; }
+    .badge.fail { background: #ffe6e3; color: #9b2525; }
+    .result { border-top: 1px solid #e4e9ef; padding-top: 14px; margin-top: 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    th, td { border-bottom: 1px solid #e4e9ef; text-align: left; padding: 9px 5px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.55; }
+    .legal-agreement { display: flex; align-items: start; gap: 10px; font-weight: 400; line-height: 1.5; }
+    .legal-agreement input { flex: none; margin-top: 3px; }
+    footer { margin-top: 28px; display: flex; gap: 18px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+<main>
+  <p id="auth-status" class="muted" aria-live="polite"></p>
+  <label for="language" data-i18n="languageLabel">表示・レポート言語</label>
+  <select id="language" name="language" aria-label="Language">
+    <option value="ja">日本語</option>
+    <option value="en">English</option>
+  </select>
+  <h1 data-i18n="pageTitle">WAF Compass</h1>
+  <p class="muted" data-i18n="intro">防ぎたい攻撃を選び、ルールの評価順とテスト結果を確認します。</p>
+  <section class="card">
+    <form id="evaluation-form">
+      <h2 data-i18n="newEvaluation">新しい評価</h2>
+      <label for="kind" data-i18n="ruleKind">ルールの種類</label>
+      <select id="kind" name="kind" required>
+        <option value="aws_waf" data-i18n="awsWafOption">AWS WAF（ルール定義の静的レビュー）</option>
+        <option value="modsecurity" data-i18n="modsecurityOption">ModSecurity（隔離環境で実行テスト）</option>
+      </select>
+      <label for="rules" data-i18n="ruleFile">ルールファイル</label>
+      <input id="rules" name="rules" type="file" accept=".json,.conf,.txt" required>
+      <p class="muted" data-i18n="fileHelp">AWS WAF は GetWebACL の JSON、ModSecurity は Include を展開した読み込み順のルール一式を指定してください。上限 1 MiB。</p>
+      <fieldset>
+        <legend data-i18n="attackTypes">試したい攻撃の種類</legend>
+        <div class="choices">
+          <label class="choice"><input type="checkbox" name="attack" value="sqli" checked><span data-attack-name="sqli">SQL インジェクション</span></label>
+          <label class="choice"><input type="checkbox" name="attack" value="xss" checked><span data-attack-name="xss">クロスサイトスクリプティング</span></label>
+          <label class="choice"><input type="checkbox" name="attack" value="path_traversal"><span data-attack-name="path_traversal">パストラバーサル</span></label>
+          <label class="choice"><input type="checkbox" name="attack" value="cmdi"><span data-attack-name="cmdi">コマンドインジェクション</span></label>
+          <label class="choice"><input type="checkbox" name="attack" value="ssrf"><span data-attack-name="ssrf">SSRF</span></label>
+          <label class="choice"><input type="checkbox" name="attack" value="xxe"><span data-attack-name="xxe">XXE</span></label>
+          <label class="choice"><input type="checkbox" name="attack" value="ssti"><span data-attack-name="ssti">テンプレートインジェクション</span></label>
+        </div>
+      </fieldset>
+      <p class="muted"><span data-i18n="owaspScope">固定ケースは主に A01 の SSRF・パストラバーサルと A05 のインジェクションを扱います。その他の Top 10 リスクはアプリケーション側の検証が必要です。</span> <a href="https://top10.owasp.org/2025/0x00_2025-Introduction/" target="_blank" rel="noopener noreferrer">OWASP Top 10:2025</a></p>
+      <p class="notice" data-i18n="notice">複数選んでも評価は1日1回分です。AWS WAF の静的レビューは実際の遮断確認ではありません。ModSecurity は Apache 用 ModSecurity 2 の隔離環境で固定ケースを測定します。本番が ModSecurity 3 などの場合、動作が異なる可能性があります。OWASP Top 10 全体の網羅やアプリケーションの安全性は証明できません。</p>
+      <div id="turnstile-container"></div>
+      <label class="legal-agreement"><input id="terms-accepted" type="checkbox" required><span><span data-i18n="agreementStart"></span><a href="/terms" data-i18n="termsLink">利用規約</a><span data-i18n="agreementMiddle">に同意し、</span><a href="/privacy" data-i18n="privacyLink">プライバシーポリシー</a><span data-i18n="agreementEnd">を確認しました。</span></span></label>
+      <button id="submit" type="submit" data-i18n="submit">評価する</button>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+  <section id="report" class="card" hidden aria-live="polite"></section>
+  <footer class="muted"><a href="/terms" data-i18n="termsLink">利用規約</a><a href="/privacy" data-i18n="privacyLink">プライバシーポリシー</a></footer>
+</main>
+<script src="/config.js"></script>
+<script>
+(() => {
+  'use strict';
+  const form = document.querySelector('#evaluation-form');
+  const status = document.querySelector('#status');
+  const button = document.querySelector('#submit');
+  const report = document.querySelector('#report');
+  const language = document.querySelector('#language');
+  const authStatus = document.querySelector('#auth-status');
+  let authenticated = false;
+  let turnstileToken = '';
+  const siteKey = window.WAF_CONFIG?.turnstileSiteKey;
+  async function refreshAuth() {
+    try {
+      const response = await fetch('/api/me', {credentials: 'same-origin'});
+      const data = await response.json();
+      authenticated = data.authenticated === true;
+      authStatus.textContent = authenticated ? (data.user || (language.value === 'ja' ? 'ログイン中' : 'Signed in')) + ' · ' : '';
+      const link = document.createElement('a');
+      link.href = authenticated ? '/logout' : '/login';
+      link.textContent = authenticated ? (language.value === 'ja' ? 'ログアウト' : 'Sign out') : (language.value === 'ja' ? 'ログインして評価する' : 'Sign in to evaluate');
+      authStatus.append(link);
+      button.disabled = !authenticated;
+    } catch {
+      authStatus.textContent = language.value === 'ja' ? 'ログイン状態を確認できません。' : 'Could not check sign-in status.';
+      button.disabled = true;
+    }
+  }
+  refreshAuth();
+  const messages = {
+    ja: {
+      languageLabel: '表示・レポート言語', pageTitle: 'WAF Compass', intro: '防ぎたい攻撃を選び、ルールの評価順とテスト結果を確認します。',
+      termsLink: '利用規約', privacyLink: 'プライバシーポリシー', agreementStart: '', agreementMiddle: 'に同意し、', agreementEnd: 'を確認しました。', agreementError: '利用規約への同意を確認してください。',
+      newEvaluation: '新しい評価', ruleKind: 'ルールの種類', awsWafOption: 'AWS WAF（ルール定義の静的レビュー）', modsecurityOption: 'ModSecurity（隔離環境で実行テスト）',
+      ruleFile: 'ルールファイル', fileHelp: 'AWS WAF は GetWebACL の JSON、ModSecurity は Include を展開した読み込み順のルール一式を指定してください。上限 1 MiB。',
+      attackTypes: '試したい攻撃の種類', owaspScope: '固定ケースは主に A01 の SSRF・パストラバーサルと A05 のインジェクションを扱います。その他の Top 10 リスクはアプリケーション側の検証が必要です。', notice: '複数選んでも評価は1日1回分です。AWS WAF の静的レビューは実際の遮断確認ではありません。ModSecurity は Apache 用 ModSecurity 2 の隔離環境で固定ケースを測定します。本番が ModSecurity 3 などの場合、動作が異なる可能性があります。OWASP Top 10 全体の網羅やアプリケーションの安全性は証明できません。',
+      submit: '評価する', report: '評価結果', summary: '結果の要約', assessment: 'ルールの分析', noAssessment: '分析文はありません。',
+      case: 'ケース', expected: '期待', http: 'HTTP', result: '結果', matchedRule: '発火ルール ID', block: '遮断', allow: '通過', match: '一致', mismatch: '不一致',
+      passed: '固定ケースは期待どおり', failed: '期待と異なるケースあり', inconclusive: '測定できませんでした', unverified: '実測していません', unknown: '結果不明',
+      engine: '測定環境', badURL: '不正な結果 URL です。', resultError: '結果取得に失敗しました', evaluationFailed: '評価に失敗しました。', timeout: '評価が時間内に完了しませんでした。',
+      fileError: '1 MiB 以下のルールファイルを指定してください。', categoryError: '攻撃の種類を1つ以上選んでください。', turnstileError: 'ボット対策の確認が完了していません。',
+      accepting: '評価を受け付けています…', acceptError: '受付に失敗しました', missingURL: '結果 URL が返されませんでした。', evaluating: '評価中です…', complete: '評価が完了しました。',
+      names: {sqli: 'SQL インジェクション', xss: 'クロスサイトスクリプティング', path_traversal: 'パストラバーサル', cmdi: 'コマンドインジェクション', ssrf: 'SSRF', xxe: 'XXE', ssti: 'テンプレートインジェクション'},
+    },
+    en: {
+      languageLabel: 'Display and report language', pageTitle: 'WAF Compass', intro: 'Choose attack types and review rule order and test results.',
+      termsLink: 'Terms of Service', privacyLink: 'Privacy Policy', agreementStart: 'I agree to the ', agreementMiddle: ' and have read the ', agreementEnd: '.', agreementError: 'Please accept the Terms of Service.',
+      newEvaluation: 'New evaluation', ruleKind: 'Rule type', awsWafOption: 'AWS WAF (static rule review)', modsecurityOption: 'ModSecurity (isolated execution test)',
+      ruleFile: 'Rule file', fileHelp: 'Provide a GetWebACL JSON response for AWS WAF, or a ModSecurity ruleset with includes flattened in load order. Limit: 1 MiB.',
+      attackTypes: 'Attack types to test', owaspScope: 'The fixed samples mainly address SSRF and path traversal under A01, and injection patterns under A05. Other Top 10 risks require application-level testing.', notice: 'Selecting multiple types still counts as one daily evaluation. AWS WAF static review does not verify blocking. ModSecurity samples run in an isolated Apache/ModSecurity 2 testbed; production ModSecurity 3 may behave differently. This does not prove coverage of the entire OWASP Top 10 or application security.',
+      submit: 'Evaluate', report: 'Evaluation result', summary: 'Summary', assessment: 'Rule analysis', noAssessment: 'No analysis was returned.',
+      case: 'Case', expected: 'Expected', http: 'HTTP', result: 'Result', matchedRule: 'Matched rule IDs', block: 'Block', allow: 'Allow', match: 'Match', mismatch: 'Mismatch',
+      passed: 'Fixed samples matched expectations', failed: 'Some samples differed', inconclusive: 'Could not measure', unverified: 'Not executed', unknown: 'Unknown result',
+      engine: 'Testbed', badURL: 'Invalid result URL.', resultError: 'Could not retrieve result', evaluationFailed: 'Evaluation failed.', timeout: 'Evaluation did not finish in time.',
+      fileError: 'Choose a rule file no larger than 1 MiB.', categoryError: 'Select at least one attack type.', turnstileError: 'Bot verification is not complete.',
+      accepting: 'Submitting evaluation…', acceptError: 'Submission failed', missingURL: 'No result URL was returned.', evaluating: 'Evaluating…', complete: 'Evaluation complete.',
+      names: {sqli: 'SQL injection', xss: 'Cross-site scripting', path_traversal: 'Path traversal', cmdi: 'Command injection', ssrf: 'SSRF', xxe: 'XXE', ssti: 'Server-side template injection'},
+    },
+  };
+  const t = key => messages[language.value][key];
+  function applyLanguage() {
+    document.documentElement.lang = language.value;
+    document.title = t('pageTitle');
+    for (const item of document.querySelectorAll('[data-i18n]')) item.textContent = t(item.dataset.i18n);
+    for (const item of document.querySelectorAll('[data-attack-name]')) item.textContent = t('names')[item.dataset.attackName];
+    for (const item of document.querySelectorAll('a[href^="/terms"], a[href^="/privacy"]')) item.hash = language.value === 'en' ? '#en' : '#ja';
+  }
+  language.addEventListener('change', applyLanguage);
+  applyLanguage();
+
+  function setStatus(message, error = false) {
+    status.textContent = message;
+    status.classList.toggle('error', error);
+  }
+  function turnstileReady() {
+    if (!siteKey || !window.turnstile) return;
+    window.turnstile.render('#turnstile-container', {
+      sitekey: siteKey,
+      callback: token => { turnstileToken = token; },
+      'expired-callback': () => { turnstileToken = ''; },
+    });
+  }
+  if (siteKey) {
+    const script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async = true;
+    script.onload = turnstileReady;
+    document.head.append(script);
+  }
+
+  function badge(outcome) {
+    const item = document.createElement('span');
+    item.className = 'badge' + (outcome === 'samples_passed' ? ' ok' : outcome === 'samples_failed' ? ' fail' : '');
+    item.textContent = ({samples_passed: t('passed'), samples_failed: t('failed'), inconclusive: t('inconclusive'), unverified: t('unverified')})[outcome] || t('unknown');
+    return item;
+  }
+  function renderReport(data) {
+    report.replaceChildren();
+    const heading = document.createElement('h2');
+    heading.textContent = t('report');
+    report.append(heading);
+    const summaryTitle = document.createElement('h3');
+    summaryTitle.textContent = t('summary');
+    const summary = document.createElement('p');
+    summary.textContent = data.summary || '';
+    report.append(summaryTitle, summary);
+    for (const group of data.attack_results || []) {
+      const block = document.createElement('div');
+      block.className = 'result';
+      const name = document.createElement('h3');
+      name.textContent = t('names')[group.category] || group.category;
+      block.append(name, badge(group.outcome));
+      if (group.engine) {
+        const engine = document.createElement('p');
+        engine.className = 'muted';
+        engine.textContent = `${t('engine')}: ${group.engine === 'modsecurity2_apache' ? 'ModSecurity 2 / Apache' : group.engine}`;
+        block.append(engine);
+      }
+      if (group.cases?.length) {
+        const table = document.createElement('table');
+        const header = document.createElement('thead');
+        const row = document.createElement('tr');
+        for (const title of [t('case'), t('expected'), t('http'), t('result'), t('matchedRule')]) {
+          const th = document.createElement('th'); th.textContent = title; row.append(th);
+        }
+        header.append(row); table.append(header);
+        const body = document.createElement('tbody');
+        for (const item of group.cases) {
+          const tr = document.createElement('tr');
+          for (const value of [item.case_id, item.want_block ? t('block') : t('allow'), String(item.http_status || '—'), item.passed ? t('match') : t('mismatch'), (item.matched_rule_ids || []).join(', ') || '—']) {
+            const td = document.createElement('td'); td.textContent = value; tr.append(td);
+          }
+          body.append(tr);
+        }
+        table.append(body); block.append(table);
+      }
+      report.append(block);
+    }
+    const analysis = document.createElement('div');
+    analysis.className = 'result';
+    const title = document.createElement('h3'); title.textContent = t('assessment');
+    const body = document.createElement('pre'); body.textContent = data.assessment || t('noAssessment');
+    analysis.append(title, body); report.append(analysis);
+    report.hidden = false;
+  }
+
+  async function pollReport(statusURL) {
+    const url = new URL(statusURL, location.origin);
+    if (url.origin !== location.origin) throw new Error(t('badURL'));
+    for (let attempt = 0; attempt < 300; attempt++) {
+      const response = await fetch(url, {credentials: 'same-origin', cache: 'no-store'});
+      if (!response.ok) throw new Error(`${t('resultError')} (${response.status}).`);
+      const data = await response.json();
+      if (data.status === 'complete') { renderReport(data.report); return; }
+      if (data.status === 'failed') throw new Error(data.message || t('evaluationFailed'));
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+    throw new Error(t('timeout'));
+  }
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!authenticated) { window.location.assign('/login'); return; }
+    const file = document.querySelector('#rules').files[0];
+    const categories = [...form.querySelectorAll('input[name="attack"]:checked')].map(input => input.value);
+    if (!file || file.size === 0 || file.size > 1024 * 1024) return setStatus(t('fileError'), true);
+    if (!categories.length) return setStatus(t('categoryError'), true);
+    if (!document.querySelector('#terms-accepted').checked) return setStatus(t('agreementError'), true);
+    if (!siteKey || !turnstileToken) return setStatus(t('turnstileError'), true);
+    button.disabled = true;
+    language.disabled = true;
+    const reportLanguage = language.value;
+    report.hidden = true;
+    setStatus(t('accepting'));
+    try {
+      const response = await fetch('/api/evaluations', {
+        method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({kind: document.querySelector('#kind').value, language: reportLanguage, snapshot: await file.text(), attack_categories: categories, turnstile_token: turnstileToken, terms_accepted: true}),
+      });
+      if (!response.ok) throw new Error(`${t('acceptError')} (${response.status}).`);
+      const accepted = await response.json();
+      if (!accepted.status_url) throw new Error(t('missingURL'));
+      setStatus(t('evaluating'));
+      await pollReport(accepted.status_url);
+      setStatus(t('complete'));
+    } catch (error) {
+      setStatus(error.message || t('evaluationFailed'), true);
+    } finally {
+      button.disabled = !authenticated;
+      language.disabled = false;
+      turnstileToken = '';
+      window.turnstile?.reset();
+    }
+  });
+})();
+</script>
+</body>
+</html>

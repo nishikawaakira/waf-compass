@@ -1,0 +1,19 @@
+aws_region = "ap-northeast-1"
+name = "waf-rule-evaluations"
+domain_name = "waf.i-wind.jp"
+cognito_domain_prefix = "REPLACE-WITH-GLOBALLY-UNIQUE-PREFIX"
+
+# First apply with false. Delegate the output NS names from i-wind.jp, push images,
+# set the values below, package the web app, then set this to true and apply again.
+deploy_application = false
+worker_image_uri = ""
+probe_image_uri = ""
+turnstile_site_key = ""
+turnstile_secret_arn = ""
+bedrock_model_id = ""
+bedrock_model_arn = ""
+bedrock_input_micro_usd_per_million = 0
+bedrock_output_micro_usd_per_million = 0
+max_input_tokens = 200000
+max_output_tokens = 2048
+enable_aws_waf = false

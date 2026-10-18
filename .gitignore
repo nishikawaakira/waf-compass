@@ -1,0 +1,11 @@
+.DS_Store
+*.test
+*.out
+coverage/
+infra/terraform/.terraform/
+infra/terraform/*.tfstate*
+infra/terraform/*.tfplan
+infra/terraform/terraform.tfvars
+infra/terraform/*.auto.tfvars
+infra/terraform/build/
+webfunction/node_modules/
