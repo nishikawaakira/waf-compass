@@ -16,6 +16,9 @@ resource "awscc_lambda_web_function" "web" {
 resource "awscc_lambda_web_function_revision" "web" {
   count         = local.deploy ? 1 : 0
   function_name = awscc_lambda_web_function.web[0].function_name
+  lifecycle {
+    create_before_destroy = true
+  }
   build_config = {
     code_config = {
       s3_object = {
