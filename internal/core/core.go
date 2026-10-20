@@ -25,7 +25,8 @@ var safeID = regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`)
 type Job struct {
 	ID               string   `json:"id"`
 	UserID           string   `json:"user_id"`
-	Kind             string   `json:"kind"`               // aws_waf or modsecurity
+	Kind             string   `json:"kind"` // aws_waf, modsecurity, or traffic_log
+	LogFormat        string   `json:"log_format,omitempty"`
 	Language         string   `json:"language,omitempty"` // ja or en; empty means ja for old jobs
 	Snapshot         string   `json:"snapshot"`
 	AttackCategories []string `json:"attack_categories"`
@@ -36,8 +37,8 @@ func (j Job) Validate() error {
 	if !safeID.MatchString(j.ID) || !safeID.MatchString(j.UserID) {
 		return errors.New("job id and user id must be 1-128 ASCII letters, digits, hyphens, or underscores")
 	}
-	if j.Kind != "aws_waf" && j.Kind != "modsecurity" {
-		return errors.New("kind must be aws_waf or modsecurity")
+	if j.Kind != "aws_waf" && j.Kind != "modsecurity" && j.Kind != "traffic_log" {
+		return errors.New("unsupported kind")
 	}
 	if j.Language != "" && j.Language != "ja" && j.Language != "en" {
 		return errors.New("language must be ja or en")
@@ -45,8 +46,20 @@ func (j Job) Validate() error {
 	if strings.TrimSpace(j.Snapshot) == "" || len(j.Snapshot) > MaxSnapshotBytes {
 		return errors.New("snapshot must be nonempty and at most 1 MiB")
 	}
-	if err := attacks.ValidateSelection(j.AttackCategories); err != nil {
-		return err
+	if j.Kind == "traffic_log" {
+		if j.LogFormat != "cloudfront" && j.LogFormat != "alb" && j.LogFormat != "combined" {
+			return errors.New("unsupported log format")
+		}
+		if len(j.AttackCategories) != 0 {
+			return errors.New("traffic log jobs cannot select attack categories")
+		}
+	} else {
+		if j.LogFormat != "" {
+			return errors.New("log format is only allowed for traffic logs")
+		}
+		if err := attacks.ValidateSelection(j.AttackCategories); err != nil {
+			return err
+		}
 	}
 	if j.ProbeResultKey != "" {
 		if j.Kind != "modsecurity" || j.ProbeResultKey != "probe-results/"+j.ID+".json" {
@@ -58,7 +71,7 @@ func (j Job) Validate() error {
 
 func (j Job) SnapshotHash() string {
 	categories, _ := json.Marshal(j.AttackCategories)
-	sum := sha256.Sum256([]byte(j.Kind + "\n" + j.Snapshot + "\n" + string(categories) + "\n" + j.ReportLanguage()))
+	sum := sha256.Sum256([]byte(j.Kind + "\n" + j.LogFormat + "\n" + j.Snapshot + "\n" + string(categories) + "\n" + j.ReportLanguage()))
 	return hex.EncodeToString(sum[:])
 }
 

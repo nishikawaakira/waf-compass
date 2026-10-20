@@ -26,6 +26,7 @@ import (
 	"waf-rule-evaluations/internal/budget"
 	"waf-rule-evaluations/internal/core"
 	"waf-rule-evaluations/internal/evaluate"
+	"waf-rule-evaluations/internal/loganalysis"
 	"waf-rule-evaluations/internal/probeexec"
 )
 
@@ -54,6 +55,7 @@ type report struct {
 	OutputTokens     int32                    `json:"output_tokens"`
 	ReservedMicroUSD int64                    `json:"reserved_micro_usd"`
 	AttackResults    []attacks.CategoryResult `json:"attack_results"`
+	LogStats         *loganalysis.Stats       `json:"log_stats,omitempty"`
 }
 
 func main() {
@@ -85,9 +87,19 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	attackResults, err := attacks.Planned(job.AttackCategories)
-	if err != nil {
-		return err
+	var attackResults []attacks.CategoryResult
+	var logStats *loganalysis.Stats
+	if job.Kind == "traffic_log" {
+		stats, err := loganalysis.Analyze(job.LogFormat, job.Snapshot)
+		if err != nil {
+			return err
+		}
+		logStats = &stats
+	} else {
+		attackResults, err = attacks.Planned(job.AttackCategories)
+		if err != nil {
+			return err
+		}
 	}
 	day := core.JSTDay(time.Now())
 	var reserved int64
@@ -111,12 +123,21 @@ func run(ctx context.Context) error {
 		}
 		attackResults = receipt.Results
 	}
-	prompt, err := evaluate.Prompt(job, attackResults)
+	var prompt string
+	if logStats != nil {
+		prompt, err = evaluate.TrafficPrompt(job, *logStats)
+	} else {
+		prompt, err = evaluate.Prompt(job, attackResults)
+	}
 	if err != nil {
 		return err
 	}
 	messages := []brtypes.Message{{Role: brtypes.ConversationRoleUser, Content: []brtypes.ContentBlock{&brtypes.ContentBlockMemberText{Value: prompt}}}}
-	system := []brtypes.SystemContentBlock{&brtypes.SystemContentBlockMemberText{Value: evaluate.System}}
+	systemText := evaluate.System
+	if logStats != nil {
+		systemText = evaluate.TrafficSystem
+	}
+	system := []brtypes.SystemContentBlock{&brtypes.SystemContentBlockMemberText{Value: systemText}}
 	tokenCount, err := bedrockClient.CountTokens(ctx, &bedrockruntime.CountTokensInput{
 		ModelId: aws.String(s.ModelID),
 		Input:   &brtypes.CountTokensInputMemberConverse{Value: brtypes.ConverseTokensRequest{Messages: messages, System: system}},
@@ -157,7 +178,10 @@ func run(ctx context.Context) error {
 	r := report{
 		JobID: job.ID, Kind: job.Kind, Language: job.ReportLanguage(), SnapshotHash: job.SnapshotHash(), ModelID: s.ModelID,
 		JSTDay: day, Assessment: assessment, Summary: evaluate.Summary(job.ReportLanguage(), attackResults),
-		ReservedMicroUSD: reserved, AttackResults: attackResults,
+		ReservedMicroUSD: reserved, AttackResults: attackResults, LogStats: logStats,
+	}
+	if logStats != nil {
+		r.Summary = evaluate.TrafficSummary(job.ReportLanguage(), *logStats)
 	}
 	if response.Usage != nil {
 		r.InputTokens = aws.ToInt32(response.Usage.InputTokens)

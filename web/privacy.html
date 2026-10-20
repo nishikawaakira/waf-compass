@@ -18,23 +18,23 @@
   <nav aria-label="Site navigation"><a href="/">WAF Compass</a><a href="/terms">利用規約 / Terms of Service</a><a href="#ja">日本語</a><a href="#en">English</a></nav>
   <article id="ja" lang="ja">
     <h1>WAF Compass プライバシーポリシー</h1>
-    <p class="muted">制定日：2026年10月18日</p>
+    <p class="muted">改定日：2026年10月20日</p>
     <h2>1. 事業者と連絡先</h2>
     <p>事業者：西川 彰（個人）。住所は info [at] i-wind.jp（[at] を @ に置き換えてください）へのご請求に応じ、遅滞なく回答します。個人情報に関するお問い合わせ、開示・訂正・利用停止・削除等の請求窓口も同メールアドレスです。</p>
     <h2>2. 取得する情報</h2>
     <ul>
       <li>ログインに伴うメールアドレス、ユーザー ID、認証用トークン。</li>
-      <li>提出されたルールファイル、選択した攻撃カテゴリ、言語、評価日時、評価結果。ルール内に利用者が記載した情報も含まれます。</li>
+      <li>提出されたルールファイルまたはアクセスログ、選択した攻撃カテゴリやログ形式、言語、評価日時、評価結果。ログには IP アドレス、URL、クエリ文字列、ユーザーエージェントなどが含まれる場合があります。</li>
       <li>サービスの利用状況、ジョブ ID、エラー、アクセス元 IP アドレスなど、配信基盤とアプリケーションの運用・セキュリティログ。</li>
       <li>Cloudflare Turnstile がボット判定のために収集するブラウザー・端末・ネットワーク情報と、その検証結果。</li>
     </ul>
     <h2>3. 利用目的</h2>
     <p>アカウント認証、評価の実行と結果提供、1日あたりの回数・費用の制限、不正利用の防止、障害対応、セキュリティ確保、お問い合わせ対応、およびサービスの維持改善のために利用します。入力したルールを広告配信には利用しません。</p>
     <h2>4. 外部サービスと送信先</h2>
-    <p>Amazon Web Services（CloudFront、Lambda Web Functions、Cognito、S3、DynamoDB、ECS、Bedrock など）を利用します。提出ルールと選択カテゴリ、必要なテスト結果は Amazon Bedrock に送信され、自然言語の評価作成に使われます。AWS はモデル事業者にプロンプト・応答へのアクセスを認めないと説明しています。AWS 側の保存条件は、選択するモデルや機能によって異なります。Cloudflare Turnstile の表示と検証には Cloudflare が関与し、ブラウザー・端末・ネットワーク情報を処理します。Cloudflare にルールファイルを送信する設計ではありません。外部サービスにおける処理国・保存期間は各サービスの条件にも従います。詳細は <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html">AWS の Bedrock データ保護</a>、<a href="https://docs.aws.amazon.com/bedrock/latest/userguide/data-retention.html">Bedrock の保存条件</a>、<a href="https://www.cloudflare.com/turnstile-privacy-policy/">Cloudflare Turnstile のプライバシー情報</a>をご確認ください。</p>
+    <p>Amazon Web Services（CloudFront、Lambda Web Functions、Cognito、S3、DynamoDB、ECS、Bedrock など）を利用します。提出ルールと選択カテゴリ、必要なテスト結果、またはアクセスログから作成した数値集計は Amazon Bedrock に送信され、自然言語の評価作成に使われます。アクセスログの本文は Bedrock に送信しません。AWS はモデル事業者にプロンプト・応答へのアクセスを認めないと説明しています。AWS 側の保存条件は、選択するモデルや機能によって異なります。Cloudflare Turnstile の表示と検証には Cloudflare が関与し、ブラウザー・端末・ネットワーク情報を処理します。Cloudflare に提出ファイルを送信する設計ではありません。外部サービスにおける処理国・保存期間は各サービスの条件にも従います。詳細は <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html">AWS の Bedrock データ保護</a>、<a href="https://docs.aws.amazon.com/bedrock/latest/userguide/data-retention.html">Bedrock の保存条件</a>、<a href="https://www.cloudflare.com/turnstile-privacy-policy/">Cloudflare Turnstile のプライバシー情報</a>をご確認ください。</p>
     <h2>5. 保存期間</h2>
     <table><thead><tr><th>情報</th><th>設定・目安</th></tr></thead><tbody>
-      <tr><td>提出ルールを含むジョブファイル</td><td>S3 ライフサイクルで7日後に削除対象</td></tr>
+      <tr><td>提出ルールまたはアクセスログを含むジョブファイル</td><td>S3 ライフサイクルで7日後に削除対象</td></tr>
       <tr><td>テスト結果・評価レポート</td><td>S3 ライフサイクルで30日後に削除対象</td></tr>
       <tr><td>評価・利用枠の管理記録</td><td>DynamoDB TTL で、種類に応じて約3日または対象日から32日後に削除対象</td></tr>
       <tr><td>アプリケーション・タスクのログ</td><td>CloudWatch Logs の設定は7日</td></tr>
@@ -48,23 +48,23 @@
   </article>
   <article id="en" lang="en">
     <h1>WAF Compass Privacy Policy</h1>
-    <p class="muted">Effective date: October 18, 2026</p>
+    <p class="muted">Revised: October 20, 2026</p>
     <h2>1. Operator and contact</h2>
     <p>Operator: 西川 彰 (individual). We will provide the Operator's address without undue delay upon request to info [at] i-wind.jp (replace [at] with @). Use the same email address for privacy inquiries and requests to access, correct, restrict, or delete personal data.</p>
     <h2>2. Information collected</h2>
     <ul>
       <li>Email address, user ID, and authentication tokens used for sign-in.</li>
-      <li>Submitted rules, selected attack categories and language, evaluation times, and results, including any information you put into a rule file.</li>
+      <li>Submitted rules or access logs, selected attack categories or log format, language, evaluation times, and results. Logs may contain IP addresses, URLs, query strings, and user agents.</li>
       <li>Service activity, job IDs, errors, IP addresses, and other operational and security logs from the application and delivery infrastructure.</li>
       <li>Browser, device, and network signals processed by Cloudflare Turnstile for bot detection, and the verification result.</li>
     </ul>
     <h2>3. Purposes</h2>
     <p>We use this information to authenticate accounts, run evaluations and deliver reports, enforce daily and cost limits, prevent abuse, investigate errors, secure and maintain the Service, answer inquiries, and improve the Service. Submitted rules are not used for advertising.</p>
     <h2>4. Service providers and transfers</h2>
-    <p>We use Amazon Web Services, including CloudFront, Lambda Web Functions, Cognito, S3, DynamoDB, ECS, and Bedrock. Submitted rules, selected categories, and relevant test results are sent to Amazon Bedrock to produce the natural-language assessment. AWS states that model providers cannot access prompts or responses. AWS-side retention depends on the selected model and features. Cloudflare processes browser, device, and network information to display and verify Turnstile; our design does not send rule files to Cloudflare. Processing locations and retention at these providers also follow their terms. See <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html">AWS Bedrock data protection</a>, <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/data-retention.html">Bedrock retention</a>, and <a href="https://www.cloudflare.com/turnstile-privacy-policy/">Cloudflare Turnstile privacy information</a>.</p>
+    <p>We use Amazon Web Services, including CloudFront, Lambda Web Functions, Cognito, S3, DynamoDB, ECS, and Bedrock. Submitted rules, selected categories, relevant test results, or numeric aggregates derived from access logs are sent to Amazon Bedrock to produce the natural-language assessment. Raw access-log text is not sent to Bedrock. AWS states that model providers cannot access prompts or responses. AWS-side retention depends on the selected model and features. Cloudflare processes browser, device, and network information to display and verify Turnstile; our design does not send submitted files to Cloudflare. Processing locations and retention at these providers also follow their terms. See <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html">AWS Bedrock data protection</a>, <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/data-retention.html">Bedrock retention</a>, and <a href="https://www.cloudflare.com/turnstile-privacy-policy/">Cloudflare Turnstile privacy information</a>.</p>
     <h2>5. Retention</h2>
     <table><thead><tr><th>Information</th><th>Configured period</th></tr></thead><tbody>
-      <tr><td>Job files containing submitted rules</td><td>Targeted for deletion after 7 days by S3 lifecycle</td></tr>
+      <tr><td>Job files containing submitted rules or access logs</td><td>Targeted for deletion after 7 days by S3 lifecycle</td></tr>
       <tr><td>Test receipts and evaluation reports</td><td>Targeted for deletion after 30 days by S3 lifecycle</td></tr>
       <tr><td>Evaluation and quota records</td><td>Targeted for deletion by DynamoDB TTL after about 3 days or 32 days from the applicable day, depending on record type</td></tr>
       <tr><td>Application and task logs</td><td>CloudWatch Logs configured for 7 days</td></tr>

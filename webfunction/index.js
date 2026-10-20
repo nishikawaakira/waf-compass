@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { randomBytes, createHash } from 'node:crypto';
+import { isIP } from 'node:net';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { DynamoDBClient, PutItemCommand, GetItemCommand, DeleteItemCommand } from '@aws-sdk/client-dynamodb';
 import { ECSClient, RunTaskCommand } from '@aws-sdk/client-ecs';
@@ -20,9 +21,10 @@ function htmlAsset(name) {
   return readFileSync(existsSync(bundled) ? bundled : new URL(`../web/${name}`, import.meta.url));
 }
 const pages = { '/': htmlAsset('index.html'), '/terms': htmlAsset('terms.html'), '/privacy': htmlAsset('privacy.html') };
-const legalVersion = '2026-10-18';
+const legalVersion = '2026-10-20';
 const categories = new Set(['sqli', 'xss', 'path_traversal', 'cmdi', 'ssrf', 'xxe', 'ssti']);
-const maxBodyBytes = (1 << 20) + 8192;
+const logFormats = new Set(['cloudfront', 'alb', 'combined']);
+const maxBodyBytes = (1 << 21) + 8192;
 const maxSnapshotBytes = 1 << 20;
 let cachedSecret;
 let cachedUntil = 0;
@@ -92,19 +94,56 @@ async function callback(req, res, url) {
   await verifier.verify(tokens.id_token);
   redirect(res, '/', [safeCookie('waf_session', tokens.id_token, Math.min(3600, tokens.expires_in || 3600)), safeCookie('waf_oauth_state', '', 0)]);
 }
+function validLog(format, snapshot) {
+  if (!logFormats.has(format) || snapshot.includes('\0')) return false;
+  const lines = snapshot.replace(/^\uFEFF/, '').trim().split(/\r?\n/);
+  if (lines.length > 20000) return false;
+  let fields = [];
+  let count = 0;
+  for (const line of lines) {
+    if (!line) continue;
+    if (format === 'cloudfront' && line.startsWith('#')) {
+      if (line.startsWith('#Fields:')) fields = line.slice(8).trim().split(/\s+/);
+      continue;
+    }
+    let status;
+    if (format === 'cloudfront') {
+      const values = line.split('\t');
+      if (!fields.length || values.length !== fields.length) return false;
+      const row = Object.fromEntries(fields.map((name, i) => [name, values[i]]));
+      if (!/^\d{4}-\d\d-\d\d$/.test(row.date || '') || !/^\d\d:\d\d:\d\d$/.test(row.time || '') || Number.isNaN(Date.parse(`${row.date}T${row.time}Z`)) || !isIP(row['c-ip'] || '') || !row['cs-uri-stem']?.startsWith('/')) return false;
+      status = row['sc-status'];
+    } else if (format === 'alb') {
+      const parts = line.match(/(?:"[^"]*"|\S+)/g) || [];
+      const client = /^(\[[^\]]+\]|[^: ]+):\d+$/.exec(parts[3] || '');
+      if (parts.length < 14 || !/^(http|https|h2|grpcs|ws|wss)$/.test(parts[0]) || !/^\d{4}-\d\d-\d\dT/.test(parts[1]) || Number.isNaN(Date.parse(parts[1])) || !client || !isIP(client[1].replace(/^\[|\]$/g, '')) || !/^"[A-Z]+ \S+ HTTP\/[\d.]+"$/.test(parts[12])) return false;
+      status = parts[8];
+    } else {
+      const match = line.match(/^([^ ]+) [^ ]+ [^ ]+ \[\d\d\/[A-Za-z]{3}\/\d{4}:\d\d:\d\d:\d\d [+-]\d{4}\] "[A-Z]+ [^" ]+ HTTP\/[\d.]+" ([1-5]\d\d) (?:\d+|-) "[^"]*" "[^"]*"(?: .*)?$/);
+      if (!match || !isIP(match[1])) return false;
+      status = match[2];
+    }
+    if (!/^[1-5]\d\d$/.test(status)) return false;
+    count++;
+  }
+  return count > 0;
+}
 function validateInput(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Invalid request');
-  if (!['aws_waf', 'modsecurity'].includes(body.kind)) throw new Error('Invalid rule kind');
+  if (!['aws_waf', 'modsecurity', 'traffic_log'].includes(body.kind)) throw new Error('Invalid rule kind');
   if (!['ja', 'en'].includes(body.language)) throw new Error('Invalid language');
   if (body.terms_accepted !== true) throw new Error('Terms of Service acceptance is required');
-  if (typeof body.snapshot !== 'string' || !body.snapshot.trim() || Buffer.byteLength(body.snapshot, 'utf8') > maxSnapshotBytes) throw new Error('Rule file must be 1 MiB or less');
-  if (!Array.isArray(body.attack_categories) || body.attack_categories.length < 1 || body.attack_categories.length > categories.size || new Set(body.attack_categories).size !== body.attack_categories.length || !body.attack_categories.every(c => categories.has(c))) throw new Error('Invalid attack categories');
+  if (typeof body.snapshot !== 'string' || !body.snapshot.trim() || Buffer.byteLength(body.snapshot, 'utf8') > maxSnapshotBytes) throw new Error('File must be 1 MiB or less');
+  if (!Array.isArray(body.attack_categories) || (body.kind === 'traffic_log' ? body.attack_categories.length !== 0 : body.attack_categories.length < 1 || body.attack_categories.length > categories.size || new Set(body.attack_categories).size !== body.attack_categories.length || !body.attack_categories.every(c => categories.has(c)))) throw new Error('Invalid attack categories');
   if (typeof body.turnstile_token !== 'string' || body.turnstile_token.length < 1 || body.turnstile_token.length > 4096) throw new Error('Bot verification is required');
   if (body.kind === 'aws_waf') {
     let parsed;
     try { parsed = JSON.parse(body.snapshot); } catch { throw new Error('AWS WAF snapshot must be JSON'); }
     if (!parsed || typeof parsed !== 'object' || !parsed.WebACL) throw new Error('Expected a GetWebACL JSON response');
   }
+  if (body.kind === 'traffic_log') {
+    if (!validLog(body.log_format, body.snapshot)) throw new Error('ログフォーマットが違います');
+  } else if (body.log_format !== undefined) throw new Error('Log format is only for traffic logs');
   return body;
 }
 async function readJSON(req) {
@@ -146,6 +185,7 @@ async function submit(req, res, user) {
   }
   const key = `jobs/${id}.json`;
   const job = { id, user_id: user.sub, kind: input.kind, language: input.language, snapshot: input.snapshot, attack_categories: input.attack_categories };
+  if (input.kind === 'traffic_log') job.log_format = input.log_format;
   if (input.kind === 'modsecurity') job.probe_result_key = `probe-results/${id}.json`;
   try {
     await s3.send(new PutObjectCommand({ Bucket: env.JOB_BUCKET, Key: key, Body: JSON.stringify(job), ContentType: 'application/json', ServerSideEncryption: 'AES256' }));

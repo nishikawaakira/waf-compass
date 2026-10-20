@@ -19,6 +19,19 @@ test('rejects oversized, duplicate, and malformed requests', () => {
   assert.throws(() => validateInput({ ...good, terms_accepted: false }), /Terms/);
 });
 test('JST day is ISO shaped', () => assert.match(jstDay(), /^\d{4}-\d{2}-\d{2}$/));
+test('traffic-log format is selected and checked before submission', () => {
+  const snapshot = '#Version: 1.0\n#Fields: date time c-ip cs-uri-stem cs-uri-query sc-status\n2026-10-20\t01:02:03\t192.0.2.1\t/search\t-\t200\n';
+  const log = { ...good, kind: 'traffic_log', log_format: 'cloudfront', snapshot, attack_categories: [] };
+  assert.equal(validateInput(log).log_format, 'cloudfront');
+  assert.throws(() => validateInput({ ...log, log_format: 'alb' }), /ログフォーマットが違います/);
+  assert.throws(() => validateInput({ ...log, snapshot: snapshot.replace('\t200', '\tbad') }), /ログフォーマットが違います/);
+  assert.throws(() => validateInput({ ...log, attack_categories: ['sqli'] }), /categories/);
+  const alb = 'https 2026-10-20T01:02:03.000000Z app/test/1 192.0.2.2:1234 10.0.0.1:443 0.001 0.001 0.001 200 200 100 200 "GET https://example.com/ HTTP/1.1" "agent"';
+  assert.equal(validateInput({ ...log, log_format: 'alb', snapshot: alb }).log_format, 'alb');
+  const combined = '192.0.2.3 - - [20/Oct/2026:10:02:03 +0900] "GET / HTTP/1.1" 200 123 "-" "agent"';
+  assert.equal(validateInput({ ...log, log_format: 'combined', snapshot: combined }).log_format, 'combined');
+  assert.throws(() => validateInput({ ...log, log_format: 'cloudfront', snapshot: combined }), /ログフォーマットが違います/);
+});
 test('anonymous API does not accept evaluations', async () => {
   const server = createServer(handler);
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));

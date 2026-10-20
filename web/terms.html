@@ -17,18 +17,18 @@
   <nav aria-label="Site navigation"><a href="/">WAF Compass</a><a href="/privacy">プライバシーポリシー / Privacy Policy</a><a href="#ja">日本語</a><a href="#en">English</a></nav>
   <article id="ja" lang="ja">
     <h1>WAF Compass 利用規約</h1>
-    <p class="muted">制定日：2026年10月18日</p>
+    <p class="muted">改定日：2026年10月20日</p>
     <p>本規約は、西川 彰（以下「運営者」）が提供する WAF Compass（以下「本サービス」）の利用条件を定めます。利用者は、評価を送信する際に本規約に同意します。</p>
     <h2>1. サービスの内容</h2>
-    <p>本サービスは、利用者が提出した AWS WAF の Web ACL 定義または ModSecurity ルールを分析し、選択された攻撃カテゴリについて説明と結果を返します。AWS WAF は定義ファイルの静的なレビューです。ModSecurity は隔離された Apache / ModSecurity 2 環境で固定されたリクエストを試します。利用者の稼働中のアプリケーションにリクエストを送信しません。</p>
+    <p>本サービスは、利用者が提出した AWS WAF の Web ACL 定義、ModSecurity ルール、またはアクセスログを分析し、説明と結果を返します。アクセスログからは AWS WAF ルール候補を提案します。AWS WAF は定義ファイルの静的なレビューです。ModSecurity は隔離された Apache / ModSecurity 2 環境で固定されたリクエストを試します。利用者の稼働中のアプリケーションにリクエストを送信しません。</p>
     <h2>2. アカウント、料金、利用制限</h2>
-    <p>評価にはログインが必要です。現時点で評価は無料ですが、1人につき日本時間の1日1回、ルールファイルは1回1 MiB以下です。失敗した評価も当日の利用枠を消費する場合があります。サービス全体の予算や障害により、受付を制限・停止する場合があります。有料機能を開始する場合は、料金と適用条件を別途明示します。</p>
+    <p>評価にはログインが必要です。現時点で評価は無料ですが、1人につき日本時間の1日1回、提出ファイルは1回1 MiB以下です。失敗した評価も当日の利用枠を消費する場合があります。サービス全体の予算や障害により、受付を制限・停止する場合があります。有料機能を開始する場合は、料金と適用条件を別途明示します。</p>
     <h2>3. 提出内容と権利</h2>
-    <p>利用者は、提出するルールについて本サービスでの処理を許可する権限を持つものとします。利用者のルールの権利は利用者または正当な権利者に帰属します。利用者は、評価の実施に必要な範囲で、運営者がルールを保存、複製、解析し、Amazon Bedrock に送信することを許諾します。パスワード、API キー、個人情報など、評価に不要な秘密情報を提出しないでください。</p>
+    <p>利用者は、提出するルールまたはアクセスログについて本サービスでの処理を許可する権限を持つものとします。提出物の権利は利用者または正当な権利者に帰属します。利用者は、評価に必要な範囲で、運営者が提出物を保存、複製、解析し、ルールまたはログから作成した集計情報を Amazon Bedrock に送信することを許諾します。ログには IP アドレスや URL のクエリ文字列など個人情報・秘密情報が含まれ得ます。提出前に不要な情報を削除してください。</p>
     <h2>4. 禁止事項</h2>
     <p>他人の権利を侵害する提出、違法な利用、他人のアカウント利用、利用回数やボット対策の回避、サービスや第三者のシステムへの過度な負荷・妨害、評価環境から外部へアクセスさせる試みを禁止します。運営者は、違反が疑われる場合に利用を制限できます。</p>
     <h2>5. 評価結果の限界</h2>
-    <p>自然言語の説明には生成 AI を使用するため、誤りや見落としがあり得ます。固定ケースの結果は試した条件だけを示します。AWS WAF の静的レビューは実際の遮断を確認しません。ルールの有効性、脆弱性の不存在、OWASP Top 10 の網羅、本番環境での同一動作を保証しません。利用者は、本番への適用前に自ら検証してください。</p>
+    <p>自然言語の説明には生成 AI を使用するため、誤りや見落としがあり得ます。固定ケースの結果は試した条件だけを示します。アクセスログのパターンは攻撃や遮断の証明ではありません。AWS WAF の静的レビューは実際の遮断を確認しません。ルールの有効性、脆弱性の不存在、OWASP Top 10 の網羅、本番環境での同一動作を保証しません。利用者は、本番への適用前に自ら検証してください。</p>
     <h2>6. 提供の変更・終了と責任</h2>
     <p>運営者は保守、障害、予算上限その他の必要がある場合、本サービスを変更・中断・終了できます。運営者は合理的な安全対策を講じますが、継続提供や評価結果の完全性を保証しません。損害賠償責任は適用法令で認められる範囲に限られ、運営者の故意または重過失による責任や法令上免責できない責任は除外しません。</p>
     <h2>7. 規約の変更、準拠法、連絡先</h2>
@@ -36,18 +36,18 @@
   </article>
   <article id="en" lang="en">
     <h1>WAF Compass Terms of Service</h1>
-    <p class="muted">Effective date: October 18, 2026</p>
+    <p class="muted">Revised: October 20, 2026</p>
     <p>These Terms govern WAF Compass (the “Service”) operated by 西川 彰 (the “Operator”). You agree to these Terms when you submit an evaluation.</p>
     <h2>1. Service</h2>
-    <p>The Service analyzes submitted AWS WAF Web ACL definitions or ModSecurity rules and returns explanations and results for selected attack categories. AWS WAF analysis is a static review. ModSecurity samples run in an isolated Apache / ModSecurity 2 environment. The Service does not send test requests to your live application.</p>
+    <p>The Service analyzes submitted AWS WAF Web ACL definitions, ModSecurity rules, or access logs. Access-log analysis suggests AWS WAF rule candidates. AWS WAF analysis is a static review. ModSecurity samples run in an isolated Apache / ModSecurity 2 environment. The Service does not send test requests to your live application.</p>
     <h2>2. Account, fees, and limits</h2>
-    <p>Sign-in is required to run an evaluation. Evaluations are currently free, limited to one per user per Japan Standard Time day and a 1 MiB rule file per submission. A failed evaluation may still use that day's allowance. The Operator may limit or suspend submissions for budget or operational reasons. Any future paid feature will have separately disclosed prices and conditions.</p>
+    <p>Sign-in is required to run an evaluation. Evaluations are currently free, limited to one per user per Japan Standard Time day and a 1 MiB file per submission. A failed evaluation may still use that day's allowance. The Operator may limit or suspend submissions for budget or operational reasons. Any future paid feature will have separately disclosed prices and conditions.</p>
     <h2>3. Submitted material</h2>
-    <p>You must have authority to submit your rules for processing. Rights in your rules remain with you or their rightful owner. You permit the Operator to store, copy, analyze, and send them to Amazon Bedrock only as needed to provide the evaluation. Do not submit passwords, API keys, personal data, or other secrets unnecessary for evaluation.</p>
+    <p>You must have authority to submit your rules or access logs for processing. Rights in submissions remain with you or their rightful owner. You permit the Operator to store, copy, and analyze submissions, and send rules or aggregate information derived from logs to Amazon Bedrock as needed for the evaluation. Logs may contain IP addresses, URL query strings, personal data, or secrets; remove unnecessary information before submission.</p>
     <h2>4. Prohibited use</h2>
     <p>Do not submit material that violates others' rights; use the Service unlawfully; use another person's account; bypass quotas or bot controls; disrupt the Service or third parties; or try to cause the test environment to reach outside systems. The Operator may restrict use when a violation is suspected.</p>
     <h2>5. Limits of the results</h2>
-    <p>AI-written explanations may contain mistakes or omissions. Fixed samples describe only the conditions tested. Static AWS WAF review does not verify actual blocking. The Service does not guarantee rule effectiveness, absence of vulnerabilities, coverage of the OWASP Top 10, or identical production behavior. Verify results before applying them in production.</p>
+    <p>AI-written explanations may contain mistakes or omissions. Fixed samples describe only the conditions tested. Log patterns do not prove attacks or blocking. Static AWS WAF review does not verify actual blocking. The Service does not guarantee rule effectiveness, absence of vulnerabilities, coverage of the OWASP Top 10, or identical production behavior. Verify results before applying them in production.</p>
     <h2>6. Changes, availability, and liability</h2>
     <p>The Operator may change, suspend, or end the Service for maintenance, failures, budget limits, or other operational needs. The Operator takes reasonable security measures but does not guarantee uninterrupted service or complete results. Liability is limited only to the extent applicable law permits; this does not exclude liability for intentional misconduct, gross negligence, or liability that cannot legally be excluded.</p>
     <h2>7. Changes to Terms, law, and contact</h2>
