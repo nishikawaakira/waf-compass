@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="WAF Compass">
+  <rect width="64" height="64" rx="14" fill="#163a66"/>
+  <circle cx="32" cy="32" r="21" fill="none" stroke="#e9f2fb" stroke-width="3"/>
+  <path d="M32 16 39 38 32 34 25 38Z" fill="#e4a62a"/>
+  <path d="M32 48 25 38 32 34 39 38Z" fill="#e9f2fb"/>
+  <circle cx="32" cy="34" r="2.5" fill="#163a66"/>
+</svg>

@@ -45,6 +45,11 @@ test('anonymous API does not accept evaluations', async () => {
     assert.equal(page.status, 200);
     const home = await page.text();
     assert.match(home, /WAF Compass/);
+    assert.match(home, /href="\/favicon\.svg"/);
+    const icon = await fetch(`${base}/favicon.svg`);
+    assert.equal(icon.status, 200);
+    assert.match(icon.headers.get('content-type'), /image\/svg\+xml/);
+    assert.match(await icon.text(), /<svg/);
     assert.match(home, /href="\/terms"/);
     assert.match(home, /href="\/privacy"/);
     for (const [path, expected] of [['/terms', '利用規約'], ['/privacy', 'プライバシーポリシー']]) {

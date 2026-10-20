@@ -21,6 +21,7 @@ function htmlAsset(name) {
   return readFileSync(existsSync(bundled) ? bundled : new URL(`../web/${name}`, import.meta.url));
 }
 const pages = { '/': htmlAsset('index.html'), '/terms': htmlAsset('terms.html'), '/privacy': htmlAsset('privacy.html') };
+const favicon = htmlAsset('favicon.svg');
 const legalVersion = '2026-10-20';
 const categories = new Set(['sqli', 'xss', 'path_traversal', 'cmdi', 'ssrf', 'xxe', 'ssti']);
 const logFormats = new Set(['cloudfront', 'alb', 'combined']);
@@ -219,6 +220,7 @@ async function handler(req, res) {
     if (req.method === 'GET' && url.pathname === '/callback') return callback(req, res, url);
     if (req.method === 'GET' && url.pathname === '/logout') return redirect(res, '/', safeCookie('waf_session', '', 0));
     if (req.method === 'GET' && url.pathname === '/config.js') return reply(res, 200, `window.WAF_CONFIG = ${JSON.stringify({ turnstileSiteKey: env.TURNSTILE_SITE_KEY || '' })};`, { 'content-type': 'application/javascript; charset=utf-8' });
+    if (req.method === 'GET' && url.pathname === '/favicon.svg') return reply(res, 200, favicon, { 'content-type': 'image/svg+xml; charset=utf-8', 'cache-control': 'public, max-age=86400' });
     if (req.method === 'GET' && pages[url.pathname]) return reply(res, 200, pages[url.pathname], { 'content-type': 'text/html; charset=utf-8', 'content-security-policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://challenges.cloudflare.com; base-uri 'none'; object-src 'none'" });
     if (url.pathname.startsWith('/api/')) {
       const user = await authenticatedUser(req);
