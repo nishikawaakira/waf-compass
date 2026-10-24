@@ -24,6 +24,15 @@ func TestAnalyzeFormatsAndNoRawData(t *testing.T) {
 	}
 }
 
+func TestAnalyzeReaderStreamsMoreThanOldLineLimit(t *testing.T) {
+	line := "2026-10-20\t01:02:03\t192.0.2.1\t/\t-\t200\n"
+	input := "#Fields: date time c-ip cs-uri-stem cs-uri-query sc-status\n" + strings.Repeat(line, 20001)
+	stats, err := AnalyzeReader("cloudfront", strings.NewReader(input))
+	if err != nil || stats.Requests != 20001 {
+		t.Fatalf("stats=%+v err=%v", stats, err)
+	}
+}
+
 func TestRejectWrongSelectionAndMalformedRows(t *testing.T) {
 	for _, tc := range []struct{ format, input string }{
 		{"alb", cf}, {"cloudfront", alb}, {"combined", cf},

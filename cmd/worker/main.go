@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -89,9 +91,20 @@ func run(ctx context.Context) error {
 	}
 	var attackResults []attacks.CategoryResult
 	var logStats *loganalysis.Stats
+	var uploadedDigest string
 	if job.Kind == "traffic_log" {
-		stats, err := loganalysis.Analyze(job.LogFormat, job.Snapshot)
+		var stats loganalysis.Stats
+		if job.LogObjectKey != "" {
+			stats, uploadedDigest, err = analyzeUploadedLog(ctx, s3Client, s.JobBucket, job)
+		} else {
+			stats, err = loganalysis.Analyze(job.LogFormat, job.Snapshot)
+		}
 		if err != nil {
+			if errors.Is(err, loganalysis.ErrFormat) {
+				if recordErr := recordLogFormatFailure(ctx, ddbClient, s.BudgetTable, job); recordErr != nil {
+					return fmt.Errorf("record format failure: %w", recordErr)
+				}
+			}
 			return err
 		}
 		logStats = &stats
@@ -180,6 +193,9 @@ func run(ctx context.Context) error {
 		JSTDay: day, Assessment: assessment, Summary: evaluate.Summary(job.ReportLanguage(), attackResults),
 		ReservedMicroUSD: reserved, AttackResults: attackResults, LogStats: logStats,
 	}
+	if uploadedDigest != "" {
+		r.SnapshotHash = uploadedDigest
+	}
 	if logStats != nil {
 		r.Summary = evaluate.TrafficSummary(job.ReportLanguage(), *logStats)
 	}
@@ -208,6 +224,38 @@ func run(ctx context.Context) error {
 	}
 	log.Printf("completed job %s; Bedrock reservation %d microUSD; report s3://%s/%s", job.ID, reserved, s.ResultBucket, resultKey)
 	return nil
+}
+
+func analyzeUploadedLog(ctx context.Context, client *s3.Client, bucket string, job core.Job) (loganalysis.Stats, string, error) {
+	var empty loganalysis.Stats
+	result, err := client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(job.LogObjectKey)})
+	if err != nil {
+		return empty, "", fmt.Errorf("read uploaded log: %w", err)
+	}
+	defer result.Body.Close()
+	if result.ContentLength == nil || *result.ContentLength <= 0 || *result.ContentLength > core.MaxTrafficLogBytes {
+		return empty, "", loganalysis.ErrFormat
+	}
+	hash := sha256.New()
+	stats, err := loganalysis.AnalyzeReader(job.LogFormat, io.TeeReader(io.LimitReader(result.Body, core.MaxTrafficLogBytes+1), hash))
+	if err != nil {
+		return empty, "", err
+	}
+	return stats, hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+func recordLogFormatFailure(ctx context.Context, client *dynamodb.Client, table string, job core.Job) error {
+	_, err := client.PutItem(ctx, &dynamodb.PutItemInput{
+		TableName: aws.String(table),
+		Item: map[string]ddbtypes.AttributeValue{
+			"pk":         &ddbtypes.AttributeValueMemberS{Value: "JOB#" + job.ID},
+			"status":     &ddbtypes.AttributeValueMemberS{Value: "failed"},
+			"error_code": &ddbtypes.AttributeValueMemberS{Value: "LOG_FORMAT"},
+			"expires_at": &ddbtypes.AttributeValueMemberN{Value: strconv.FormatInt(time.Now().Add(3*24*time.Hour).Unix(), 10)},
+		},
+		ConditionExpression: aws.String("attribute_not_exists(pk)"),
+	})
+	return err
 }
 
 func loadSettings() (settings, error) {

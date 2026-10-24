@@ -20,3 +20,12 @@ output "cognito_user_pool_id" {
 output "cognito_client_id" {
   value = aws_cognito_user_pool_client.web.id
 }
+output "access_log_bucket" {
+  value = aws_s3_bucket.access_logs.bucket
+}
+output "athena_workgroup" {
+  value = aws_athena_workgroup.analytics.name
+}
+output "athena_table" {
+  value = var.deploy_application ? "${aws_glue_catalog_database.analytics.name}.${aws_glue_catalog_table.cloudfront_access[0].name}" : null
+}

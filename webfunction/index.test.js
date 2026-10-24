@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateInput, jstDay, handler } from './index.js';
+import { validateInput, validateUploadRequest, jstDay, handler } from './index.js';
 import { createServer } from 'node:http';
 
 const good = {
@@ -32,6 +32,13 @@ test('traffic-log format is selected and checked before submission', () => {
   assert.equal(validateInput({ ...log, log_format: 'combined', snapshot: combined }).log_format, 'combined');
   assert.throws(() => validateInput({ ...log, log_format: 'cloudfront', snapshot: combined }), /ログフォーマットが違います/);
 });
+test('direct access-log upload accepts only a bounded log with consent', () => {
+  const upload = { kind: 'traffic_log', log_format: 'cloudfront', language: 'ja', size: 50 * 1024 * 1024, turnstile_token: 'test-token', terms_accepted: true };
+  assert.equal(validateUploadRequest(upload).size, upload.size);
+  assert.throws(() => validateUploadRequest({ ...upload, size: upload.size + 1 }), /50 MiB/);
+  assert.throws(() => validateUploadRequest({ ...upload, kind: 'aws_waf' }), /format/);
+  assert.throws(() => validateUploadRequest({ ...upload, terms_accepted: false }), /Terms/);
+});
 test('anonymous API does not accept evaluations', async () => {
   const server = createServer(handler);
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -39,6 +46,8 @@ test('anonymous API does not accept evaluations', async () => {
     const base = `http://127.0.0.1:${server.address().port}`;
     const response = await fetch(`${base}/api/evaluations`, { method: 'POST', body: JSON.stringify(good), headers: { 'content-type': 'application/json' } });
     assert.equal(response.status, 401);
+    const uploadResponse = await fetch(`${base}/api/uploads`, { method: 'POST', body: JSON.stringify(good), headers: { 'content-type': 'application/json' } });
+    assert.equal(uploadResponse.status, 401);
     const me = await fetch(`${base}/api/me`);
     assert.deepEqual(await me.json(), { authenticated: false, user: null });
     const page = await fetch(base);

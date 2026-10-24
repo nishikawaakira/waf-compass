@@ -54,7 +54,7 @@ resource "aws_iam_role_policy" "worker" {
         Effect = "Allow", Action = ["s3:PutObject"], Resource = ["${aws_s3_bucket.results.arn}/results/*", "${aws_s3_bucket.results.arn}/probe-results/*"]
       },
       {
-        Effect = "Allow", Action = ["dynamodb:TransactWriteItems", "dynamodb:UpdateItem"], Resource = aws_dynamodb_table.budget.arn
+        Effect = "Allow", Action = ["dynamodb:TransactWriteItems", "dynamodb:UpdateItem", "dynamodb:PutItem"], Resource = aws_dynamodb_table.budget.arn
       },
       {
         Effect = "Allow", Action = ["bedrock:CountTokens", "bedrock:InvokeModel"], Resource = var.bedrock_model_arn
@@ -197,13 +197,16 @@ resource "aws_iam_role_policy" "web" {
         Effect = "Allow", Action = ["logs:CreateLogStream", "logs:PutLogEvents"], Resource = "${aws_cloudwatch_log_group.web.arn}:*"
       },
       {
-        Effect = "Allow", Action = ["s3:PutObject"], Resource = "${aws_s3_bucket.jobs.arn}/jobs/*"
+        Effect = "Allow", Action = ["s3:PutObject"], Resource = ["${aws_s3_bucket.jobs.arn}/jobs/*", "${aws_s3_bucket.jobs.arn}/uploads/*"]
+      },
+      {
+        Effect = "Allow", Action = ["s3:GetObject"], Resource = "${aws_s3_bucket.jobs.arn}/uploads/*"
       },
       {
         Effect = "Allow", Action = ["s3:GetObject"], Resource = "${aws_s3_bucket.results.arn}/results/*"
       },
       {
-        Effect = "Allow", Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem"], Resource = aws_dynamodb_table.budget.arn
+        Effect = "Allow", Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem", "dynamodb:UpdateItem"], Resource = aws_dynamodb_table.budget.arn
       },
       {
         Effect = "Allow", Action = ["ecs:RunTask"], Resource = aws_ecs_task_definition.worker[0].arn, Condition = {

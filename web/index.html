@@ -84,7 +84,7 @@
       <h2 data-i18n="howTitle">使い方</h2>
       <ol class="steps">
         <li data-i18n="stepOne">ログインして、AWS WAF または ModSecurity を選びます。</li>
-        <li data-i18n="stepTwo">1 MiB 以下のルールファイルを指定し、確認したい攻撃の種類を選びます。</li>
+        <li data-i18n="stepTwo">ルールファイルは 1 MiB、アクセスログは 50 MiB 以下で指定します。</li>
         <li data-i18n="stepThree">評価結果で、ルールの分析と固定ケースの結果を確認します。</li>
       </ol>
       <p class="notice" data-i18n="publicNotice">WAF Compass はアプリケーション全体の脆弱性診断ではありません。AWS WAF の結果は静的レビューであり、ModSecurity の測定は固定ケースと隔離環境に限られます。</p>
@@ -109,7 +109,7 @@
 	  </div>
       <label for="rules" data-i18n="ruleFile">ルールファイル</label>
       <input id="rules" name="rules" type="file" accept=".json,.conf,.txt" required>
-      <p class="muted" data-i18n="fileHelp">AWS WAF は GetWebACL の JSON、ModSecurity は Include を展開した読み込み順のルール一式を指定してください。上限 1 MiB。</p>
+      <p class="muted" data-i18n="fileHelp">ルールファイルは 1 MiB 以下、アクセスログは 50 MiB 以下です。</p>
 	  <fieldset id="attack-fieldset">
         <legend data-i18n="attackTypes">試したい攻撃の種類</legend>
         <div class="choices">
@@ -193,19 +193,19 @@
       modFeatureTitle: 'ModSecurity', modFeatureBody: 'ルール一式を隔離した Apache / ModSecurity 2 環境で試し、固定の攻撃・正常リクエストの結果を示します。',
       trafficFeatureTitle: 'アクセスログ', trafficFeatureBody: 'WAF 未導入でも、アクセスログを集計して AWS WAF の候補ルールと確認手順を説明します。',
       loginCta: 'ログインして評価を始める', freeLimit: '現在は無料で、評価は利用者ごとに日本時間で1日1回までです。利用にはログインが必要です。',
-      howTitle: '使い方', stepOne: 'ログインして評価の種類を選びます。', stepTwo: '1 MiB 以下のファイルを指定します。ログ解析では形式を選び、ルール評価では攻撃の種類を選びます。', stepThree: '評価結果で、ルール候補や分析結果を確認します。',
+      howTitle: '使い方', stepOne: 'ログインして評価の種類を選びます。', stepTwo: 'ルールファイルは 1 MiB、アクセスログは 50 MiB 以下で指定します。ログ解析では形式を選び、ルール評価では攻撃の種類を選びます。', stepThree: '評価結果で、ルール候補や分析結果を確認します。',
       publicNotice: 'WAF Compass はアプリケーション全体の脆弱性診断ではありません。AWS WAF の結果は静的レビューであり、ModSecurity の測定は固定ケースと隔離環境に限られます。',
       termsLink: '利用規約', privacyLink: 'プライバシーポリシー', agreementStart: '', agreementMiddle: 'に同意し、', agreementEnd: 'を確認しました。', agreementError: '利用規約への同意を確認してください。',
       newEvaluation: '新しい評価', ruleKind: '評価の種類', awsWafOption: 'AWS WAF（ルール定義の静的レビュー）', modsecurityOption: 'ModSecurity（隔離環境で実行テスト）', trafficOption: 'アクセスログから AWS WAF ルール候補を提案', logFormat: 'アクセスログの形式',
-      ruleFile: 'アップロードファイル', fileHelp: 'AWS WAF は GetWebACL JSON、ModSecurity は展開済みルール、ログ解析は選択した形式の UTF-8 テキストを指定してください。上限 1 MiB。',
+      ruleFile: 'アップロードファイル', fileHelp: 'AWS WAF は GetWebACL JSON、ModSecurity は展開済みルール（各 1 MiB 以下）、ログ解析は選択した形式の UTF-8 テキスト（50 MiB 以下）を指定してください。',
       attackTypes: '試したい攻撃の種類', owaspScope: '固定ケースは主に A01 の SSRF・パストラバーサルと A05 のインジェクションを扱います。その他の Top 10 リスクはアプリケーション側の検証が必要です。', notice: '複数選んでも評価は1日1回分です。AWS WAF の静的レビューは実際の遮断確認ではありません。ModSecurity は Apache 用 ModSecurity 2 の隔離環境で固定ケースを測定します。本番が ModSecurity 3 などの場合、動作が異なる可能性があります。OWASP Top 10 全体の網羅やアプリケーションの安全性は証明できません。',
       logNotice: 'ログには IP アドレスや URL のクエリなどが含まれます。不要な情報を削除してからアップロードしてください。分析は候補の提案であり、攻撃や遮断の証明ではありません。候補は Count モードで検証してください。',
       submit: '評価する', report: '評価結果', summary: '結果の要約', assessment: 'ルールの分析', noAssessment: '分析文はありません。',
       case: 'ケース', expected: '期待', http: 'HTTP', result: '結果', matchedRule: '発火ルール ID', block: '遮断', allow: '通過', match: '一致', mismatch: '不一致',
       passed: '固定ケースは期待どおり', failed: '期待と異なるケースあり', inconclusive: '測定できませんでした', unverified: '実測していません', unknown: '結果不明',
       engine: '測定環境', badURL: '不正な結果 URL です。', resultError: '結果取得に失敗しました', evaluationFailed: '評価に失敗しました。', timeout: '評価が時間内に完了しませんでした。',
-      fileError: '1 MiB 以下のファイルを指定してください。', categoryError: '攻撃の種類を1つ以上選んでください。', formatError: 'ログフォーマットが違います。', turnstileError: 'ボット対策の確認が完了していません。',
-      accepting: '評価を受け付けています…', acceptError: '受付に失敗しました', missingURL: '結果 URL が返されませんでした。', evaluating: '評価中です…', complete: '評価が完了しました。',
+      fileError: 'ルールは 1 MiB、アクセスログは 50 MiB 以下のファイルを指定してください。', categoryError: '攻撃の種類を1つ以上選んでください。', formatError: 'ログフォーマットが違います。', turnstileError: 'ボット対策の確認が完了していません。',
+      accepting: '評価を受け付けています…', uploading: 'アクセスログをアップロードしています…', uploadError: 'アップロードに失敗しました', acceptError: '受付に失敗しました', missingURL: '結果 URL が返されませんでした。', evaluating: '評価中です…', complete: '評価が完了しました。',
       names: {sqli: 'SQL インジェクション', xss: 'クロスサイトスクリプティング', path_traversal: 'パストラバーサル', cmdi: 'コマンドインジェクション', ssrf: 'SSRF', xxe: 'XXE', ssti: 'テンプレートインジェクション'},
     },
     en: {
@@ -215,19 +215,19 @@
       modFeatureTitle: 'ModSecurity', modFeatureBody: 'Run fixed attack and benign requests against the rules in an isolated Apache / ModSecurity 2 environment.',
       trafficFeatureTitle: 'Access logs', trafficFeatureBody: 'Analyze access logs to suggest AWS WAF rule candidates and validation steps, even before deploying a WAF.',
       loginCta: 'Sign in to start an evaluation', freeLimit: 'Currently free, with one evaluation per user per Japan Standard Time day. Sign-in is required.',
-      howTitle: 'How it works', stepOne: 'Sign in and choose an evaluation type.', stepTwo: 'Upload a file up to 1 MiB. Select a log format for log analysis, or attack types for rule review.', stepThree: 'Review the suggested rule candidates or analysis results.',
+      howTitle: 'How it works', stepOne: 'Sign in and choose an evaluation type.', stepTwo: 'Upload a rules file up to 1 MiB or an access log up to 50 MiB. Select a log format or attack types.', stepThree: 'Review the suggested rule candidates or analysis results.',
       publicNotice: 'WAF Compass is not a full application vulnerability scan. AWS WAF results are a static review; ModSecurity measurements cover only fixed cases in an isolated environment.',
       termsLink: 'Terms of Service', privacyLink: 'Privacy Policy', agreementStart: 'I agree to the ', agreementMiddle: ' and have read the ', agreementEnd: '.', agreementError: 'Please accept the Terms of Service.',
       newEvaluation: 'New evaluation', ruleKind: 'Evaluation type', awsWafOption: 'AWS WAF (static rule review)', modsecurityOption: 'ModSecurity (isolated execution test)', trafficOption: 'Suggest AWS WAF rules from access logs', logFormat: 'Access log format',
-      ruleFile: 'Upload file', fileHelp: 'Provide GetWebACL JSON, flattened ModSecurity rules, or UTF-8 text in the selected access-log format. Limit: 1 MiB.',
+      ruleFile: 'Upload file', fileHelp: 'Provide GetWebACL JSON or flattened ModSecurity rules (up to 1 MiB), or UTF-8 text in the selected access-log format (up to 50 MiB).',
       attackTypes: 'Attack types to test', owaspScope: 'The fixed samples mainly address SSRF and path traversal under A01, and injection patterns under A05. Other Top 10 risks require application-level testing.', notice: 'Selecting multiple types still counts as one daily evaluation. AWS WAF static review does not verify blocking. ModSecurity samples run in an isolated Apache/ModSecurity 2 testbed; production ModSecurity 3 may behave differently. This does not prove coverage of the entire OWASP Top 10 or application security.',
       logNotice: 'Logs may contain IP addresses and URL queries. Remove unnecessary data before upload. This suggests rule candidates; it does not prove attacks or blocking. Test candidates in Count mode.',
       submit: 'Evaluate', report: 'Evaluation result', summary: 'Summary', assessment: 'Rule analysis', noAssessment: 'No analysis was returned.',
       case: 'Case', expected: 'Expected', http: 'HTTP', result: 'Result', matchedRule: 'Matched rule IDs', block: 'Block', allow: 'Allow', match: 'Match', mismatch: 'Mismatch',
       passed: 'Fixed samples matched expectations', failed: 'Some samples differed', inconclusive: 'Could not measure', unverified: 'Not executed', unknown: 'Unknown result',
       engine: 'Testbed', badURL: 'Invalid result URL.', resultError: 'Could not retrieve result', evaluationFailed: 'Evaluation failed.', timeout: 'Evaluation did not finish in time.',
-      fileError: 'Choose a file no larger than 1 MiB.', categoryError: 'Select at least one attack type.', formatError: 'The log format does not match the selected format.', turnstileError: 'Bot verification is not complete.',
-      accepting: 'Submitting evaluation…', acceptError: 'Submission failed', missingURL: 'No result URL was returned.', evaluating: 'Evaluating…', complete: 'Evaluation complete.',
+      fileError: 'Choose a rules file up to 1 MiB or an access log up to 50 MiB.', categoryError: 'Select at least one attack type.', formatError: 'The log format does not match the selected format.', turnstileError: 'Bot verification is not complete.',
+      accepting: 'Submitting evaluation…', uploading: 'Uploading access log…', uploadError: 'Upload failed', acceptError: 'Submission failed', missingURL: 'No result URL was returned.', evaluating: 'Evaluating…', complete: 'Evaluation complete.',
       names: {sqli: 'SQL injection', xss: 'Cross-site scripting', path_traversal: 'Path traversal', cmdi: 'Command injection', ssrf: 'SSRF', xxe: 'XXE', ssti: 'Server-side template injection'},
     },
   };
@@ -342,7 +342,7 @@
       if (!response.ok) throw new Error(`${t('resultError')} (${response.status}).`);
       const data = await response.json();
       if (data.status === 'complete') { renderReport(data.report); return; }
-      if (data.status === 'failed') throw new Error(data.message || t('evaluationFailed'));
+      if (data.status === 'failed') throw new Error(data.code === 'LOG_FORMAT' ? t('formatError') : data.message || t('evaluationFailed'));
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
     throw new Error(t('timeout'));
@@ -354,7 +354,7 @@
     const file = document.querySelector('#rules').files[0];
     const isLog = kind.value === 'traffic_log';
     const categories = isLog ? [] : [...form.querySelectorAll('input[name="attack"]:checked')].map(input => input.value);
-    if (!file || file.size === 0 || file.size > 1024 * 1024) return setStatus(t('fileError'), true);
+    if (!file || file.size === 0 || file.size > (isLog ? 50 * 1024 * 1024 : 1024 * 1024)) return setStatus(t('fileError'), true);
     if (!isLog && !categories.length) return setStatus(t('categoryError'), true);
     if (!document.querySelector('#terms-accepted').checked) return setStatus(t('agreementError'), true);
     if (!siteKey || !turnstileToken) return setStatus(t('turnstileError'), true);
@@ -364,10 +364,33 @@
     report.hidden = true;
     setStatus(t('accepting'));
     try {
-      const response = await fetch('/api/evaluations', {
-        method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({kind: kind.value, ...(isLog ? {log_format: document.querySelector('#log-format').value} : {}), language: reportLanguage, snapshot: await file.text(), attack_categories: categories, turnstile_token: turnstileToken, terms_accepted: true}),
-      });
+      let response;
+      if (isLog) {
+        const initiated = await fetch('/api/uploads', {
+          method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({kind: 'traffic_log', log_format: document.querySelector('#log-format').value, language: reportLanguage, size: file.size, turnstile_token: turnstileToken, terms_accepted: true}),
+        });
+        if (!initiated.ok) throw new Error(`${t('acceptError')} (${initiated.status}).`);
+        const upload = await initiated.json();
+        const uploadURL = new URL(upload.url);
+        if (uploadURL.protocol !== 'https:' || !uploadURL.hostname.endsWith('.amazonaws.com') || !upload.upload_id || !upload.fields) throw new Error(t('uploadError'));
+        const uploadForm = new FormData();
+        for (const [key, value] of Object.entries(upload.fields)) uploadForm.append(key, value);
+        uploadForm.append('file', file);
+        setStatus(t('uploading'));
+        const uploaded = await fetch(uploadURL, {method: 'POST', body: uploadForm});
+        if (!uploaded.ok) throw new Error(`${t('uploadError')} (${uploaded.status}).`);
+        setStatus(t('accepting'));
+        response = await fetch('/api/evaluations', {
+          method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({upload_id: upload.upload_id}),
+        });
+      } else {
+        response = await fetch('/api/evaluations', {
+          method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({kind: kind.value, language: reportLanguage, snapshot: await file.text(), attack_categories: categories, turnstile_token: turnstileToken, terms_accepted: true}),
+        });
+      }
       if (!response.ok) {
         const failure = await response.json().catch(() => ({}));
         if (failure.error === 'ログフォーマットが違います') throw new Error(t('formatError'));

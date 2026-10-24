@@ -19,7 +19,7 @@
   <nav aria-label="Site navigation"><a href="/">WAF Compass</a><a href="/terms">利用規約 / Terms of Service</a><a href="#ja">日本語</a><a href="#en">English</a></nav>
   <article id="ja" lang="ja">
     <h1>WAF Compass プライバシーポリシー</h1>
-    <p class="muted">改定日：2026年10月20日</p>
+    <p class="muted">改定日：2026年10月24日</p>
     <h2>1. 事業者と連絡先</h2>
     <p>事業者：西川 彰（個人）。住所は info [at] i-wind.jp（[at] を @ に置き換えてください）へのご請求に応じ、遅滞なく回答します。個人情報に関するお問い合わせ、開示・訂正・利用停止・削除等の請求窓口も同メールアドレスです。</p>
     <h2>2. 取得する情報</h2>
@@ -27,6 +27,7 @@
       <li>ログインに伴うメールアドレス、ユーザー ID、認証用トークン。</li>
       <li>提出されたルールファイルまたはアクセスログ、選択した攻撃カテゴリやログ形式、言語、評価日時、評価結果。ログには IP アドレス、URL、クエリ文字列、ユーザーエージェントなどが含まれる場合があります。</li>
       <li>サービスの利用状況、ジョブ ID、エラー、アクセス元 IP アドレスなど、配信基盤とアプリケーションの運用・セキュリティログ。</li>
+      <li>CloudFront のアクセス記録（日付・時刻、IP アドレス、HTTP メソッド、URL パス、応答ステータス、ユーザーエージェント、配信結果）。クエリ文字列と Cookie は保存対象から除外します。</li>
       <li>Cloudflare Turnstile がボット判定のために収集するブラウザー・端末・ネットワーク情報と、その検証結果。</li>
     </ul>
     <h2>3. 利用目的</h2>
@@ -36,6 +37,9 @@
     <h2>5. 保存期間</h2>
     <table><thead><tr><th>情報</th><th>設定・目安</th></tr></thead><tbody>
       <tr><td>提出ルールまたはアクセスログを含むジョブファイル</td><td>S3 ライフサイクルで7日後に削除対象</td></tr>
+      <tr><td>評価を確定していないアクセスログのアップロード</td><td>S3 ライフサイクルで1日後に削除対象</td></tr>
+      <tr><td>CloudFront のアクセス記録</td><td>S3 ライフサイクルで30日後に削除対象</td></tr>
+      <tr><td>Athena のクエリ結果</td><td>S3 ライフサイクルで7日後に削除対象</td></tr>
       <tr><td>テスト結果・評価レポート</td><td>S3 ライフサイクルで30日後に削除対象</td></tr>
       <tr><td>評価・利用枠の管理記録</td><td>DynamoDB TTL で、種類に応じて約3日または対象日から32日後に削除対象</td></tr>
       <tr><td>アプリケーション・タスクのログ</td><td>CloudWatch Logs の設定は7日</td></tr>
@@ -43,13 +47,13 @@
     </tbody></table>
     <p>ライフサイクルや TTL による削除は、期日直後の即時削除を保証しません。バックアップ、法令上の義務、調査中の記録、AWS・Cloudflare 側の処理には別の期間が適用されることがあります。アカウント削除は窓口へご連絡ください。</p>
     <h2>6. Cookie と安全管理</h2>
-    <p>ログイン状態と OAuth の処理に必要な Cookie を使います。認証 Cookie の有効期間は最大1時間、OAuth 状態 Cookie は最大10分です。提出物とレポートは非公開の S3 バケットに保存し、通信を暗号化し、権限を限定します。ModSecurity の試験は隔離されたタスクで行います。完全な安全性を保証するものではありません。</p>
+    <p>ログイン状態と OAuth の処理に必要な Cookie を使います。認証 Cookie の有効期間は最大1時間、OAuth 状態 Cookie は最大10分です。アクセスログはブラウザーから非公開の S3 バケットへ直接アップロードします。提出物とレポートも非公開の S3 バケットに保存し、通信を暗号化し、権限を限定します。ModSecurity の試験は隔離されたタスクで行います。完全な安全性を保証するものではありません。</p>
     <h2>7. 開示等の請求、第三者提供、変更</h2>
     <p>ご本人からの保有個人データの開示、訂正、利用停止、削除などの請求には、本人確認のうえ法令に従って対応します。サービスの提供に必要な委託・外部処理、法令に基づく場合などを除き、個人データを第三者へ提供する場合は適用法令に従います。処理場所が日本国外となる場合には、適用される越境移転の要件に従います。ポリシー変更時はこのページに変更内容と効力発生日を掲示します。</p>
   </article>
   <article id="en" lang="en">
     <h1>WAF Compass Privacy Policy</h1>
-    <p class="muted">Revised: October 20, 2026</p>
+    <p class="muted">Revised: October 24, 2026</p>
     <h2>1. Operator and contact</h2>
     <p>Operator: 西川 彰 (individual). We will provide the Operator's address without undue delay upon request to info [at] i-wind.jp (replace [at] with @). Use the same email address for privacy inquiries and requests to access, correct, restrict, or delete personal data.</p>
     <h2>2. Information collected</h2>
@@ -57,6 +61,7 @@
       <li>Email address, user ID, and authentication tokens used for sign-in.</li>
       <li>Submitted rules or access logs, selected attack categories or log format, language, evaluation times, and results. Logs may contain IP addresses, URLs, query strings, and user agents.</li>
       <li>Service activity, job IDs, errors, IP addresses, and other operational and security logs from the application and delivery infrastructure.</li>
+      <li>CloudFront access records (date and time, IP address, HTTP method, URL path, response status, user agent, and delivery result). Query strings and cookies are excluded.</li>
       <li>Browser, device, and network signals processed by Cloudflare Turnstile for bot detection, and the verification result.</li>
     </ul>
     <h2>3. Purposes</h2>
@@ -66,6 +71,9 @@
     <h2>5. Retention</h2>
     <table><thead><tr><th>Information</th><th>Configured period</th></tr></thead><tbody>
       <tr><td>Job files containing submitted rules or access logs</td><td>Targeted for deletion after 7 days by S3 lifecycle</td></tr>
+      <tr><td>Access-log uploads without a completed submission</td><td>Targeted for deletion after 1 day by S3 lifecycle</td></tr>
+      <tr><td>CloudFront access records</td><td>Targeted for deletion after 30 days by S3 lifecycle</td></tr>
+      <tr><td>Athena query results</td><td>Targeted for deletion after 7 days by S3 lifecycle</td></tr>
       <tr><td>Test receipts and evaluation reports</td><td>Targeted for deletion after 30 days by S3 lifecycle</td></tr>
       <tr><td>Evaluation and quota records</td><td>Targeted for deletion by DynamoDB TTL after about 3 days or 32 days from the applicable day, depending on record type</td></tr>
       <tr><td>Application and task logs</td><td>CloudWatch Logs configured for 7 days</td></tr>
@@ -73,7 +81,7 @@
     </tbody></table>
     <p>Lifecycle and TTL deletion may occur after the target date rather than immediately. Backups, legal obligations, investigations, and AWS or Cloudflare processing may follow other periods. Contact us to request account deletion.</p>
     <h2>6. Cookies and security</h2>
-    <p>We use cookies needed for sign-in and the OAuth flow. The authentication cookie lasts at most one hour; the OAuth state cookie lasts at most ten minutes. We store submissions and reports in private S3 buckets, encrypt communications, restrict access, and run ModSecurity tests in an isolated task. No security measure is perfect.</p>
+    <p>We use cookies needed for sign-in and the OAuth flow. The authentication cookie lasts at most one hour; the OAuth state cookie lasts at most ten minutes. Access logs are uploaded directly from the browser to a private S3 bucket. We store submissions and reports in private S3 buckets, encrypt communications, restrict access, and run ModSecurity tests in an isolated task. No security measure is perfect.</p>
     <h2>7. Your requests, disclosures, and changes</h2>
     <p>We handle verified requests to access, correct, restrict, or delete personal data under applicable law. Apart from necessary service-provider processing and cases permitted or required by law, disclosures to third parties follow applicable law. Cross-border processing follows applicable transfer requirements. Changes to this Policy will be posted here with their effective date.</p>
   </article>

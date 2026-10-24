@@ -104,9 +104,27 @@ resource "aws_s3_bucket_lifecycle_configuration" "jobs" {
   rule {
     id     = "expire-jobs"
     status = "Enabled"
+    filter { prefix = "jobs/" }
     expiration {
       days = 7
     }
+  }
+  rule {
+    id     = "expire-unsubmitted-uploads"
+    status = "Enabled"
+    filter { prefix = "uploads/" }
+    expiration {
+      days = 1
+    }
+  }
+}
+resource "aws_s3_bucket_cors_configuration" "jobs" {
+  bucket = aws_s3_bucket.jobs.id
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["POST"]
+    allowed_origins = [local.public_origin]
+    max_age_seconds = 300
   }
 }
 resource "aws_s3_bucket_lifecycle_configuration" "results" {

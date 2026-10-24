@@ -2,8 +2,9 @@ import { createServer } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { randomBytes, createHash } from 'node:crypto';
 import { isIP } from 'node:net';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
-import { DynamoDBClient, PutItemCommand, GetItemCommand, DeleteItemCommand } from '@aws-sdk/client-dynamodb';
+import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, CopyObjectCommand } from '@aws-sdk/client-s3';
+import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
+import { DynamoDBClient, PutItemCommand, GetItemCommand, DeleteItemCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 import { ECSClient, RunTaskCommand } from '@aws-sdk/client-ecs';
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
@@ -22,9 +23,11 @@ function htmlAsset(name) {
 }
 const pages = { '/': htmlAsset('index.html'), '/terms': htmlAsset('terms.html'), '/privacy': htmlAsset('privacy.html') };
 const favicon = htmlAsset('favicon.svg');
-const legalVersion = '2026-10-20';
+const legalVersion = '2026-10-24';
 const categories = new Set(['sqli', 'xss', 'path_traversal', 'cmdi', 'ssrf', 'xxe', 'ssti']);
 const logFormats = new Set(['cloudfront', 'alb', 'combined']);
+const maxTrafficLogBytes = 50 << 20;
+const maxDailyLogUploads = 50;
 const maxBodyBytes = (1 << 21) + 8192;
 const maxSnapshotBytes = 1 << 20;
 let cachedSecret;
@@ -147,6 +150,15 @@ function validateInput(body) {
   } else if (body.log_format !== undefined) throw new Error('Log format is only for traffic logs');
   return body;
 }
+function validateUploadRequest(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Invalid request');
+  if (body.kind !== 'traffic_log' || !logFormats.has(body.log_format)) throw new Error('Invalid log format');
+  if (!['ja', 'en'].includes(body.language)) throw new Error('Invalid language');
+  if (!Number.isSafeInteger(body.size) || body.size < 1 || body.size > maxTrafficLogBytes) throw new Error('Log file must be 50 MiB or less');
+  if (body.terms_accepted !== true) throw new Error('Terms of Service acceptance is required');
+  if (typeof body.turnstile_token !== 'string' || body.turnstile_token.length < 1 || body.turnstile_token.length > 4096) throw new Error('Bot verification is required');
+  return body;
+}
 async function readJSON(req) {
   const declared = Number(req.headers['content-length'] || 0);
   if (declared > maxBodyBytes) throw new Error('Request too large');
@@ -170,20 +182,103 @@ async function verifyTurnstile(token) {
   const data = await response.json();
   return data.success === true && data.hostname === new URL(env.PUBLIC_ORIGIN).hostname;
 }
-async function submit(req, res, user) {
-  if (req.headers.origin !== env.PUBLIC_ORIGIN) return error(res, 403, 'Invalid origin');
-  let input;
-  try { input = validateInput(await readJSON(req)); } catch (e) { return error(res, 400, e.message); }
-  if (!(await verifyTurnstile(input.turnstile_token))) return error(res, 403, 'Bot verification failed');
-  const day = jstDay();
-  const id = b64url(randomBytes(18));
-  const claim = `SUBMIT#${day}#${user.sub}`;
+async function claimDailySubmission(day, userID, id) {
+  const claim = `SUBMIT#${day}#${userID}`;
   try {
     await putItem({ pk: attr(claim), job_id: attr(id), expires_at: { N: String(ttl(3 * 86400)) } }, 'attribute_not_exists(pk)');
   } catch (e) {
-    if (e.name === 'ConditionalCheckFailedException') return error(res, 429, 'Only one evaluation per user per JST day');
+    if (e.name === 'ConditionalCheckFailedException') return null;
     throw e;
   }
+  return claim;
+}
+async function launchJob(id, key) {
+  const result = await ecs.send(new RunTaskCommand({ Cluster: env.ECS_CLUSTER, TaskDefinition: env.WORKER_TASK_DEFINITION, LaunchType: 'FARGATE', Count: 1, StartedBy: id, ClientToken: id, NetworkConfiguration: { awsvpcConfiguration: { subnets: [env.WORKER_SUBNET], securityGroups: [env.WORKER_SECURITY_GROUP], assignPublicIp: 'ENABLED' } }, Overrides: { ContainerOverrides: [{ Name: 'worker', Environment: [{ Name: 'JOB_KEY', Value: key }] }] } }));
+  if (result.failures?.length || result.tasks?.length !== 1) throw new Error('Worker did not start');
+}
+async function initiateLogUpload(req, res, user) {
+  if (req.headers.origin !== env.PUBLIC_ORIGIN) return error(res, 403, 'Invalid origin');
+  let input;
+  try { input = validateUploadRequest(await readJSON(req)); } catch (e) { return error(res, 400, e.message); }
+  if (!(await verifyTurnstile(input.turnstile_token))) return error(res, 403, 'Bot verification failed');
+  const day = jstDay();
+  const id = b64url(randomBytes(18));
+  const claim = await claimDailySubmission(day, user.sub, id);
+  if (!claim) return error(res, 429, 'Only one evaluation per user per JST day');
+  const uploadCountKey = `UPLOAD_COUNT#${day}`;
+  try {
+    await ddb.send(new UpdateItemCommand({
+      TableName: env.BUDGET_TABLE, Key: { pk: attr(uploadCountKey) },
+      UpdateExpression: 'SET uploads = if_not_exists(uploads, :zero) + :one, expires_at = :expires',
+      ConditionExpression: 'attribute_not_exists(uploads) OR uploads < :limit',
+      ExpressionAttributeValues: { ':zero': { N: '0' }, ':one': { N: '1' }, ':limit': { N: String(maxDailyLogUploads) }, ':expires': { N: String(ttl(3 * 86400)) } },
+    }));
+  } catch (e) {
+    await deleteItem(claim);
+    if (e.name === 'ConditionalCheckFailedException') return error(res, 429, 'Daily log upload limit reached');
+    throw e;
+  }
+  try {
+    const key = `uploads/${id}.log`;
+    const post = await createPresignedPost(s3, {
+      Bucket: env.JOB_BUCKET, Key: key, Expires: 300,
+      Conditions: [['content-length-range', 1, maxTrafficLogBytes + 16384]],
+      Fields: { 'Content-Type': 'text/plain', success_action_status: '204' },
+    });
+    await putItem({
+      pk: attr(`UPLOAD#${id}`), user_id: attr(user.sub), log_format: attr(input.log_format),
+      language: attr(input.language), declared_bytes: { N: String(input.size) },
+      status: attr('issued'), terms_version: attr(legalVersion),
+      expires_at: { N: String(ttl(3600)) },
+    }, 'attribute_not_exists(pk)');
+    reply(res, 200, { upload_id: id, url: post.url, fields: post.fields });
+  } catch (e) {
+    await deleteItem(claim);
+    throw e;
+  }
+}
+async function submitUploadedLog(res, user, uploadID) {
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(uploadID)) return error(res, 400, 'Invalid upload ID');
+  const upload = (await getItem(`UPLOAD#${uploadID}`)).Item;
+  if (!upload || upload.user_id?.S !== user.sub || upload.status?.S !== 'issued' || Number(upload.expires_at?.N || 0) < ttl(0)) return error(res, 404, 'Upload not found');
+  const sourceKey = `uploads/${uploadID}.log`;
+  let object;
+  try { object = await s3.send(new HeadObjectCommand({ Bucket: env.JOB_BUCKET, Key: sourceKey })); }
+  catch (e) { if (e.name === 'NotFound' || e.name === 'NoSuchKey' || e.$metadata?.httpStatusCode === 404) return error(res, 400, 'Upload is incomplete'); throw e; }
+  if (!object.ContentLength || object.ContentLength > maxTrafficLogBytes || object.ContentLength !== Number(upload.declared_bytes.N)) return error(res, 400, 'Log file size does not match');
+  try {
+    await ddb.send(new UpdateItemCommand({
+      TableName: env.BUDGET_TABLE, Key: { pk: attr(`UPLOAD#${uploadID}`) },
+      UpdateExpression: 'SET #status = :submitted',
+      ConditionExpression: '#status = :issued AND user_id = :user',
+      ExpressionAttributeNames: { '#status': 'status' },
+      ExpressionAttributeValues: { ':submitted': attr('submitted'), ':issued': attr('issued'), ':user': attr(user.sub) },
+    }));
+  } catch (e) {
+    if (e.name === 'ConditionalCheckFailedException') return error(res, 409, 'Upload already submitted');
+    throw e;
+  }
+  const key = `jobs/${uploadID}.json`;
+  const dataKey = `jobs/data/${uploadID}.log`;
+  const job = { id: uploadID, user_id: user.sub, kind: 'traffic_log', log_format: upload.log_format.S, language: upload.language.S, snapshot: '', attack_categories: [], log_object_key: dataKey };
+  await s3.send(new CopyObjectCommand({ Bucket: env.JOB_BUCKET, Key: dataKey, CopySource: `${env.JOB_BUCKET}/${sourceKey}`, CopySourceIfMatch: object.ETag, ServerSideEncryption: 'AES256' }));
+  await s3.send(new PutObjectCommand({ Bucket: env.JOB_BUCKET, Key: key, Body: JSON.stringify(job), ContentType: 'application/json', ServerSideEncryption: 'AES256' }));
+  await putItem({ pk: attr(`EVAL#${uploadID}`), user_id: attr(user.sub), created_at: { N: String(ttl(0)) }, terms_version: upload.terms_version, expires_at: { N: String(ttl(3 * 86400)) } }, 'attribute_not_exists(pk)');
+  await launchJob(uploadID, key);
+  reply(res, 202, { job_id: uploadID, status_url: `/api/evaluations/${uploadID}` });
+}
+async function submit(req, res, user) {
+  if (req.headers.origin !== env.PUBLIC_ORIGIN) return error(res, 403, 'Invalid origin');
+  let body;
+  try { body = await readJSON(req); } catch (e) { return error(res, 400, e.message); }
+  if (body && typeof body.upload_id === 'string') return submitUploadedLog(res, user, body.upload_id);
+  let input;
+  try { input = validateInput(body); } catch (e) { return error(res, 400, e.message); }
+  if (!(await verifyTurnstile(input.turnstile_token))) return error(res, 403, 'Bot verification failed');
+  const day = jstDay();
+  const id = b64url(randomBytes(18));
+  const claim = await claimDailySubmission(day, user.sub, id);
+  if (!claim) return error(res, 429, 'Only one evaluation per user per JST day');
   const key = `jobs/${id}.json`;
   const job = { id, user_id: user.sub, kind: input.kind, language: input.language, snapshot: input.snapshot, attack_categories: input.attack_categories };
   if (input.kind === 'traffic_log') job.log_format = input.log_format;
@@ -191,8 +286,7 @@ async function submit(req, res, user) {
   try {
     await s3.send(new PutObjectCommand({ Bucket: env.JOB_BUCKET, Key: key, Body: JSON.stringify(job), ContentType: 'application/json', ServerSideEncryption: 'AES256' }));
     await putItem({ pk: attr(`EVAL#${id}`), user_id: attr(user.sub), created_at: { N: String(ttl(0)) }, terms_version: attr(legalVersion), expires_at: { N: String(ttl(3 * 86400)) } }, 'attribute_not_exists(pk)');
-    const result = await ecs.send(new RunTaskCommand({ Cluster: env.ECS_CLUSTER, TaskDefinition: env.WORKER_TASK_DEFINITION, LaunchType: 'FARGATE', Count: 1, StartedBy: id, ClientToken: id, NetworkConfiguration: { awsvpcConfiguration: { subnets: [env.WORKER_SUBNET], securityGroups: [env.WORKER_SECURITY_GROUP], assignPublicIp: 'ENABLED' } }, Overrides: { ContainerOverrides: [{ Name: 'worker', Environment: [{ Name: 'JOB_KEY', Value: key }] }] } }));
-    if (result.failures?.length || result.tasks?.length !== 1) throw new Error('Worker did not start');
+    await launchJob(id, key);
   } catch (e) {
     await Promise.allSettled([deleteItem(claim), deleteItem(`EVAL#${id}`)]);
     throw e;
@@ -204,6 +298,7 @@ async function status(res, user, id) {
   const record = (await getItem(`EVAL#${id}`)).Item;
   if (!record || record.user_id?.S !== user.sub) return error(res, 404, 'Not found');
   const job = (await getItem(`JOB#${id}`)).Item;
+  if (job?.status?.S === 'failed' && job.error_code?.S === 'LOG_FORMAT') return reply(res, 200, { status: 'failed', code: 'LOG_FORMAT', message: 'ログフォーマットが違います' });
   if (job?.status?.S === 'complete' && job.result_key?.S === `results/${id}.json`) {
     const object = await s3.send(new GetObjectCommand({ Bucket: env.RESULT_BUCKET, Key: job.result_key.S }));
     const report = JSON.parse(await object.Body.transformToString());
@@ -221,11 +316,12 @@ async function handler(req, res) {
     if (req.method === 'GET' && url.pathname === '/logout') return redirect(res, '/', safeCookie('waf_session', '', 0));
     if (req.method === 'GET' && url.pathname === '/config.js') return reply(res, 200, `window.WAF_CONFIG = ${JSON.stringify({ turnstileSiteKey: env.TURNSTILE_SITE_KEY || '' })};`, { 'content-type': 'application/javascript; charset=utf-8' });
     if (req.method === 'GET' && url.pathname === '/favicon.svg') return reply(res, 200, favicon, { 'content-type': 'image/svg+xml; charset=utf-8', 'cache-control': 'public, max-age=86400' });
-    if (req.method === 'GET' && pages[url.pathname]) return reply(res, 200, pages[url.pathname], { 'content-type': 'text/html; charset=utf-8', 'content-security-policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://challenges.cloudflare.com; base-uri 'none'; object-src 'none'" });
+    if (req.method === 'GET' && pages[url.pathname]) return reply(res, 200, pages[url.pathname], { 'content-type': 'text/html; charset=utf-8', 'content-security-policy': `default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://challenges.cloudflare.com https://${env.JOB_BUCKET}.s3.${region}.amazonaws.com; base-uri 'none'; object-src 'none'` });
     if (url.pathname.startsWith('/api/')) {
       const user = await authenticatedUser(req);
       if (url.pathname === '/api/me' && req.method === 'GET') return reply(res, 200, { authenticated: !!user, user: user?.email || null });
       if (!user) return error(res, 401, 'Login required');
+      if (url.pathname === '/api/uploads' && req.method === 'POST') return initiateLogUpload(req, res, user);
       if (url.pathname === '/api/evaluations' && req.method === 'POST') return submit(req, res, user);
       const match = /^\/api\/evaluations\/([A-Za-z0-9_-]+)$/.exec(url.pathname);
       if (match && req.method === 'GET') return status(res, user, match[1]);
@@ -238,4 +334,4 @@ async function handler(req, res) {
 }
 const [host, port] = (env.AWS_LAMBDA_HTTP_ENDPOINT || 'localhost:3000').split(':');
 if (env.NODE_ENV !== 'test') createServer(handler).listen(Number(port), host);
-export { validateInput, jstDay, handler };
+export { validateInput, validateUploadRequest, jstDay, handler };

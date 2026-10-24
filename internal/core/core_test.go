@@ -93,3 +93,24 @@ func TestSnapshotByteLimit(t *testing.T) {
 		t.Fatal("limit must count UTF-8 bytes, not runes")
 	}
 }
+
+func TestUploadedTrafficLogReference(t *testing.T) {
+	j := Job{ID: "job-1", UserID: "user-1", Kind: "traffic_log", LogFormat: "cloudfront", LogObjectKey: "jobs/data/job-1.log"}
+	if err := j.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	hash := j.SnapshotHash()
+	j.LogObjectKey = "jobs/data/other.log"
+	if err := j.Validate(); err == nil {
+		t.Fatal("foreign log object must be rejected")
+	}
+	j.LogObjectKey = "jobs/data/job-1.log"
+	j.Snapshot = "untrusted duplicate"
+	if err := j.Validate(); err == nil {
+		t.Fatal("cannot use inline and object input together")
+	}
+	j.Snapshot = ""
+	if hash != j.SnapshotHash() {
+		t.Fatal("stable object reference must have stable identity")
+	}
+}

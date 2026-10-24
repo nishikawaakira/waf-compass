@@ -2,12 +2,15 @@
   "name": "waf-rule-evaluations-web",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.913.0",
     "@aws-sdk/client-ecs": "^3.913.0",
     "@aws-sdk/client-s3": "^3.913.0",
     "@aws-sdk/client-secrets-manager": "^3.913.0",
+    "@aws-sdk/s3-presigned-post": "^3.1156.0",
     "aws-jwt-verify": "^5.1.1"
   }
 }

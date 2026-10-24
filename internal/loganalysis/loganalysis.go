@@ -1,14 +1,17 @@
 package loganalysis
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 var ErrFormat = errors.New("ログフォーマットが違います")
@@ -33,18 +36,28 @@ var signals = map[string]*regexp.Regexp{
 }
 
 func Analyze(format, input string) (Stats, error) {
+	return AnalyzeReader(format, strings.NewReader(input))
+}
+
+func AnalyzeReader(format string, input io.Reader) (Stats, error) {
 	st := Stats{Format: format, Signals: map[string]int{}}
-	if format != "cloudfront" && format != "alb" && format != "combined" || strings.ContainsRune(input, '\x00') {
+	if format != "cloudfront" && format != "alb" && format != "combined" {
 		return st, ErrFormat
 	}
-	lines := strings.Split(strings.TrimSpace(strings.TrimPrefix(input, "\ufeff")), "\n")
-	if len(lines) > 20000 {
-		return st, ErrFormat
-	}
+	scanner := bufio.NewScanner(input)
+	scanner.Buffer(make([]byte, 64*1024), 64*1024)
 	var fields []string
 	counts := map[string]int{}
-	for _, raw := range lines {
-		line := strings.TrimSuffix(raw, "\r")
+	lineCount := 0
+	for scanner.Scan() {
+		lineCount++
+		if lineCount > 1_000_000 {
+			return st, ErrFormat
+		}
+		line := strings.TrimSuffix(strings.TrimPrefix(scanner.Text(), "\ufeff"), "\r")
+		if !utf8.ValidString(line) || strings.ContainsRune(line, '\x00') {
+			return st, ErrFormat
+		}
 		if line == "" {
 			continue
 		}
@@ -142,6 +155,9 @@ func Analyze(format, input string) (Stats, error) {
 		if counts[client+"|"+minute] > st.PeakClientMinute {
 			st.PeakClientMinute = counts[client+"|"+minute]
 		}
+	}
+	if scanner.Err() != nil {
+		return st, ErrFormat
 	}
 	if st.Requests == 0 {
 		return st, ErrFormat
