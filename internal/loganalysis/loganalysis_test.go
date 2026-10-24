@@ -33,6 +33,26 @@ func TestAnalyzeReaderStreamsMoreThanOldLineLimit(t *testing.T) {
 	}
 }
 
+func TestPHP2ShellSignalsAreSeparateWeakLogIndicators(t *testing.T) {
+	cloudfront := "#Fields: date time c-ip cs-method cs-uri-stem cs-uri-query sc-status\n" +
+		"2026-10-24\t01:02:03\t192.0.2.1\tPOST\t/upload.php\tx=PHP%5FSESSION%5FUPLOAD%5FPROGRESS\t500\n" +
+		"2026-10-24\t01:02:04\t192.0.2.1\tPOST\t/upload.php\t-\t200\n"
+	stats, err := Analyze("cloudfront", cloudfront)
+	if err != nil || stats.PHP2ShellURLMarkers != 1 || stats.PHPPostRequests != 2 || stats.PHPPostServerErrors != 1 {
+		t.Fatalf("unexpected CloudFront PHP indicators: %+v, %v", stats, err)
+	}
+	albLog := `https 2026-10-24T01:02:03.000000Z app/test/1 192.0.2.2:1234 10.0.0.1:443 0.001 0.001 0.001 500 500 100 200 "POST https://example.com/upload.php?x=PHPSESSID HTTP/1.1" "agent"` + "\n"
+	stats, err = Analyze("alb", albLog)
+	if err != nil || stats.PHP2ShellURLMarkers != 1 || stats.PHPPostServerErrors != 1 {
+		t.Fatalf("unexpected ALB PHP indicators: %+v, %v", stats, err)
+	}
+	combined := `192.0.2.3 - - [24/Oct/2026:10:02:03 +0900] "POST /upload.php HTTP/1.1" 500 123 "-" "agent"` + "\n"
+	stats, err = Analyze("combined", combined)
+	if err != nil || stats.PHP2ShellURLMarkers != 0 || stats.PHPPostServerErrors != 1 {
+		t.Fatalf("unexpected Combined PHP indicators: %+v, %v", stats, err)
+	}
+}
+
 func TestRejectWrongSelectionAndMalformedRows(t *testing.T) {
 	for _, tc := range []struct{ format, input string }{
 		{"alb", cf}, {"cloudfront", alb}, {"combined", cf},

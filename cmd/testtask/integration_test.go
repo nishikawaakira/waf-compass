@@ -36,6 +36,7 @@ func TestDockerProbe(t *testing.T) {
 		`SecRule REQUEST_HEADERS:Content-Type "@contains application/xml" "id:100010,phase:1,pass,nolog,ctl:requestBodyProcessor=URLENCODED"`,
 		`SecRule ARGS_NAMES "@contains <!DOCTYPE" "id:100006,phase:2,deny,status:403,log"`,
 		`SecRule ARGS "@contains 7*7" "id:100007,phase:2,deny,status:403,log"`,
+		`SecRule ARGS_NAMES "@streq PHP_SESSION_UPLOAD_PROGRESS" "id:100008,phase:2,deny,status:403,log"`,
 	}, "\n") + "\n"
 	names := attacks.Names()
 	dir := t.TempDir()

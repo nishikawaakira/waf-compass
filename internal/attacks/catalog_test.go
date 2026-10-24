@@ -9,15 +9,15 @@ import (
 
 func TestCatalogIsBoundedAndSafeForIsolatedProbe(t *testing.T) {
 	names := Names()
-	if len(names) != 7 {
-		t.Fatalf("expected seven selectable attack categories, got %d", len(names))
+	if len(names) != 8 {
+		t.Fatalf("expected eight selectable attack categories, got %d", len(names))
 	}
 	all, err := Cases(names)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(all) != 21 {
-		t.Fatalf("expected 21 fixed requests, got %d", len(all))
+	if len(all) != 24 {
+		t.Fatalf("expected 24 fixed requests, got %d", len(all))
 	}
 	seen := map[string]bool{}
 	for _, c := range all {
@@ -34,6 +34,9 @@ func TestCatalogIsBoundedAndSafeForIsolatedProbe(t *testing.T) {
 		}
 		if len(c.Body) > 1024 || len(c.Path) > 1024 {
 			t.Fatalf("case %s exceeds bounded request size", c.ID)
+		}
+		if c.Category == "php2shell" && (!strings.Contains(c.ContentType, "multipart/form-data") || strings.Contains(c.Body, "memory_limit")) {
+			t.Fatalf("case %s is not an inert multipart marker sample", c.ID)
 		}
 	}
 	for _, name := range names {

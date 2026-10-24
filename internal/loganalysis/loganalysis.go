@@ -17,16 +17,20 @@ import (
 var ErrFormat = errors.New("ログフォーマットが違います")
 
 type Stats struct {
-	Format           string         `json:"format"`
-	Requests         int            `json:"requests"`
-	ClientErrors     int            `json:"client_errors"`
-	ServerErrors     int            `json:"server_errors"`
-	Signals          map[string]int `json:"signals"`
-	PeakClientMinute int            `json:"peak_client_minute"`
+	Format              string         `json:"format"`
+	Requests            int            `json:"requests"`
+	ClientErrors        int            `json:"client_errors"`
+	ServerErrors        int            `json:"server_errors"`
+	Signals             map[string]int `json:"signals"`
+	PeakClientMinute    int            `json:"peak_client_minute"`
+	PHPPostRequests     int            `json:"php_post_requests"`
+	PHPPostServerErrors int            `json:"php_post_server_errors"`
+	PHP2ShellURLMarkers int            `json:"php2shell_url_markers"`
 }
 
 var combined = regexp.MustCompile(`^([^ ]+) [^ ]+ [^ ]+ \[([^]]+)\] "([A-Z]+) ([^" ]+) HTTP/[0-9.]+" ([1-5][0-9]{2}) (?:[0-9]+|-) "[^"]*" "[^"]*"(?: .*)?$`)
-var request = regexp.MustCompile(`^[A-Z]+ ([^ ]+) HTTP/[0-9.]+$`)
+var request = regexp.MustCompile(`^([A-Z]+) ([^ ]+) HTTP/[0-9.]+$`)
+var phpPath = regexp.MustCompile(`(?i)\.php(?:/|$)`)
 var signals = map[string]*regexp.Regexp{
 	"sqli":           regexp.MustCompile(`(?i)(?:%27|['"]|union(?:%20|\+|\s)+select\b|select(?:%20|\+|\s)+.+\bfrom\b|or(?:%20|\+|\s)+1=1)`),
 	"xss":            regexp.MustCompile(`(?i)(?:<script|%3cscript|javascript:|onerror(?:=|%3d))`),
@@ -67,7 +71,7 @@ func AnalyzeReader(format string, input io.Reader) (Stats, error) {
 			}
 			continue
 		}
-		var client, minute, target string
+		var client, minute, target, method string
 		var status int
 		switch format {
 		case "cloudfront":
@@ -91,6 +95,7 @@ func AnalyzeReader(format string, input io.Reader) (Stats, error) {
 			}
 			minute = t.Format("2006-01-02T15:04")
 			client = m["c-ip"]
+			method = m["cs-method"]
 			status, err = strconv.Atoi(m["sc-status"])
 			if err != nil {
 				return st, ErrFormat
@@ -118,7 +123,7 @@ func AnalyzeReader(format string, input io.Reader) (Stats, error) {
 			if match == nil {
 				return st, ErrFormat
 			}
-			target = match[1]
+			method, target = match[1], match[2]
 		case "combined":
 			match := combined.FindStringSubmatch(line)
 			if match == nil || net.ParseIP(match[1]) == nil {
@@ -130,13 +135,15 @@ func AnalyzeReader(format string, input io.Reader) (Stats, error) {
 			}
 			minute = t.UTC().Format("2006-01-02T15:04")
 			client = match[1]
+			method = match[3]
 			status, _ = strconv.Atoi(match[5])
 			target = match[4]
 		}
 		if status < 100 || status > 599 || len(target) > 8192 {
 			return st, ErrFormat
 		}
-		if parsed, err := url.ParseRequestURI(target); err != nil || parsed.Scheme != "" && parsed.Host == "" {
+		parsed, err := url.ParseRequestURI(target)
+		if err != nil || parsed.Scheme != "" && parsed.Host == "" {
 			return st, ErrFormat
 		}
 		st.Requests++
@@ -151,6 +158,15 @@ func AnalyzeReader(format string, input io.Reader) (Stats, error) {
 				st.Signals[name]++
 			}
 		}
+		if method == "POST" && phpPath.MatchString(parsed.Path) {
+			st.PHPPostRequests++
+			if status >= 500 {
+				st.PHPPostServerErrors++
+			}
+		}
+		if php2shellURLMarker(target) {
+			st.PHP2ShellURLMarkers++
+		}
 		counts[client+"|"+minute]++
 		if counts[client+"|"+minute] > st.PeakClientMinute {
 			st.PeakClientMinute = counts[client+"|"+minute]
@@ -163,6 +179,21 @@ func AnalyzeReader(format string, input io.Reader) (Stats, error) {
 		return st, ErrFormat
 	}
 	return st, nil
+}
+
+func php2shellURLMarker(target string) bool {
+	for i := 0; i < 3; i++ {
+		lower := strings.ToLower(target)
+		if strings.Contains(lower, "php_session_upload_progress") || strings.Contains(lower, "phpsessid") {
+			return true
+		}
+		decoded, err := url.QueryUnescape(target)
+		if err != nil || decoded == target {
+			break
+		}
+		target = decoded
+	}
+	return false
 }
 
 func splitALB(line string) ([]string, error) {

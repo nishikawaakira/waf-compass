@@ -210,7 +210,7 @@ resource "aws_glue_catalog_table" "cloudfront_access" {
     }
     columns {
 
-      name = "cs(User-Agent)"
+      name = "cs(user-agent)"
 
       type = "string"
 

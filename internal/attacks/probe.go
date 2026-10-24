@@ -83,6 +83,9 @@ func Probe(ctx context.Context, target string, names []string) ([]CategoryResult
 			if c.ContentType != "" {
 				req.Header.Set("Content-Type", c.ContentType)
 			}
+			if c.Cookie != "" {
+				req.Header.Set("Cookie", c.Cookie)
+			}
 			var response *http.Response
 			response, err = client.Do(req)
 			if err == nil {

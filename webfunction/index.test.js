@@ -10,6 +10,7 @@ const good = {
 test('accepts bounded AWS WAF input and both languages', () => {
   assert.equal(validateInput(good).kind, 'aws_waf');
   assert.equal(validateInput({ ...good, language: 'en' }).language, 'en');
+  assert.deepEqual(validateInput({ ...good, attack_categories: ['php2shell'] }).attack_categories, ['php2shell']);
 });
 test('rejects oversized, duplicate, and malformed requests', () => {
   assert.throws(() => validateInput({ ...good, snapshot: 'x'.repeat(1048577) }), /1 MiB/);

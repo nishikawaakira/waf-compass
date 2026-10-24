@@ -45,19 +45,20 @@ type settings struct {
 }
 
 type report struct {
-	JobID            string                   `json:"job_id"`
-	Kind             string                   `json:"kind"`
-	Language         string                   `json:"language"`
-	SnapshotHash     string                   `json:"snapshot_hash"`
-	ModelID          string                   `json:"model_id"`
-	JSTDay           string                   `json:"jst_day"`
-	Assessment       string                   `json:"assessment"`
-	Summary          string                   `json:"summary"`
-	InputTokens      int32                    `json:"input_tokens"`
-	OutputTokens     int32                    `json:"output_tokens"`
-	ReservedMicroUSD int64                    `json:"reserved_micro_usd"`
-	AttackResults    []attacks.CategoryResult `json:"attack_results"`
-	LogStats         *loganalysis.Stats       `json:"log_stats,omitempty"`
+	JobID            string                    `json:"job_id"`
+	Kind             string                    `json:"kind"`
+	Language         string                    `json:"language"`
+	SnapshotHash     string                    `json:"snapshot_hash"`
+	ModelID          string                    `json:"model_id"`
+	JSTDay           string                    `json:"jst_day"`
+	Assessment       string                    `json:"assessment"`
+	Summary          string                    `json:"summary"`
+	InputTokens      int32                     `json:"input_tokens"`
+	OutputTokens     int32                     `json:"output_tokens"`
+	ReservedMicroUSD int64                     `json:"reserved_micro_usd"`
+	AttackResults    []attacks.CategoryResult  `json:"attack_results"`
+	LogStats         *loganalysis.Stats        `json:"log_stats,omitempty"`
+	PHP2ShellReview  *evaluate.PHP2ShellReview `json:"php2shell_review,omitempty"`
 }
 
 func main() {
@@ -92,6 +93,7 @@ func run(ctx context.Context) error {
 	var attackResults []attacks.CategoryResult
 	var logStats *loganalysis.Stats
 	var uploadedDigest string
+	var php2shellReview *evaluate.PHP2ShellReview
 	if job.Kind == "traffic_log" {
 		var stats loganalysis.Stats
 		if job.LogObjectKey != "" {
@@ -112,6 +114,18 @@ func run(ctx context.Context) error {
 		attackResults, err = attacks.Planned(job.AttackCategories)
 		if err != nil {
 			return err
+		}
+		if job.Kind == "aws_waf" {
+			for _, category := range job.AttackCategories {
+				if category == "php2shell" {
+					review, reviewErr := evaluate.ReviewPHP2Shell(job.Snapshot)
+					if reviewErr != nil {
+						return reviewErr
+					}
+					php2shellReview = &review
+					break
+				}
+			}
 		}
 	}
 	day := core.JSTDay(time.Now())
@@ -191,7 +205,7 @@ func run(ctx context.Context) error {
 	r := report{
 		JobID: job.ID, Kind: job.Kind, Language: job.ReportLanguage(), SnapshotHash: job.SnapshotHash(), ModelID: s.ModelID,
 		JSTDay: day, Assessment: assessment, Summary: evaluate.Summary(job.ReportLanguage(), attackResults),
-		ReservedMicroUSD: reserved, AttackResults: attackResults, LogStats: logStats,
+		ReservedMicroUSD: reserved, AttackResults: attackResults, LogStats: logStats, PHP2ShellReview: php2shellReview,
 	}
 	if uploadedDigest != "" {
 		r.SnapshotHash = uploadedDigest

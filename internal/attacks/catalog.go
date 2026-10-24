@@ -16,11 +16,17 @@ type Case struct {
 	Method      string `json:"method"`
 	Path        string `json:"path"`
 	ContentType string `json:"content_type,omitempty"`
+	Cookie      string `json:"cookie,omitempty"`
 	Body        string `json:"body,omitempty"`
 	WantBlock   bool   `json:"want_block"`
 }
 
 var catalog = map[string][]Case{
+	"php2shell": {
+		{ID: "php2shell-cookie", Title: "Upload progress marker with PHP session cookie", Method: http.MethodPost, Path: "/__waf_test__/", ContentType: "multipart/form-data; boundary=WafCompassBoundary", Cookie: "PHPSESSID=wafcompass", Body: phpProgressBody, WantBlock: true},
+		{ID: "php2shell-body-session", Title: "Upload progress marker with PHP session form field", Method: http.MethodPost, Path: "/__waf_test__/", ContentType: "multipart/form-data; boundary=WafCompassBoundary", Body: phpSessionBody, WantBlock: true},
+		{ID: "php2shell-benign", Title: "Ordinary multipart upload with a PHP session cookie", Method: http.MethodPost, Path: "/__waf_test__/", ContentType: "multipart/form-data; boundary=WafCompassBoundary", Cookie: "PHPSESSID=wafcompass", Body: phpBenignBody},
+	},
 	"sqli": {
 		{ID: "sqli-query", Title: "SQL injection in query", Method: http.MethodGet, Path: "/__waf_test__/?id=1%27%20OR%20%271%27%3D%271", WantBlock: true},
 		{ID: "sqli-form", Title: "SQL injection in form body", Method: http.MethodPost, Path: "/__waf_test__/", ContentType: "application/x-www-form-urlencoded", Body: "search=%27+UNION+SELECT+NULL--", WantBlock: true},
@@ -57,6 +63,10 @@ var catalog = map[string][]Case{
 		{ID: "ssti-benign", Title: "Ordinary template text", Method: http.MethodGet, Path: "/__waf_test__/?template=welcome"},
 	},
 }
+
+const phpProgressBody = "--WafCompassBoundary\r\nContent-Disposition: form-data; name=\"PHP_SESSION_UPLOAD_PROGRESS\"\r\n\r\nwafcompass\r\n--WafCompassBoundary\r\nContent-Disposition: form-data; name=\"upload\"; filename=\"sample.txt\"\r\nContent-Type: text/plain\r\n\r\nsample\r\n--WafCompassBoundary--\r\n"
+const phpSessionBody = "--WafCompassBoundary\r\nContent-Disposition: form-data; name=\"PHPSESSID\"\r\n\r\nwafcompass\r\n" + phpProgressBody
+const phpBenignBody = "--WafCompassBoundary\r\nContent-Disposition: form-data; name=\"upload\"; filename=\"sample.txt\"\r\nContent-Type: text/plain\r\n\r\nsample\r\n--WafCompassBoundary--\r\n"
 
 func Names() []string {
 	names := make([]string, 0, len(catalog))

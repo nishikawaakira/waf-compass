@@ -24,7 +24,7 @@ function htmlAsset(name) {
 const pages = { '/': htmlAsset('index.html'), '/terms': htmlAsset('terms.html'), '/privacy': htmlAsset('privacy.html') };
 const favicon = htmlAsset('favicon.svg');
 const legalVersion = '2026-10-24';
-const categories = new Set(['sqli', 'xss', 'path_traversal', 'cmdi', 'ssrf', 'xxe', 'ssti']);
+const categories = new Set(['sqli', 'xss', 'path_traversal', 'cmdi', 'ssrf', 'xxe', 'ssti', 'php2shell']);
 const logFormats = new Set(['cloudfront', 'alb', 'combined']);
 const maxTrafficLogBytes = 50 << 20;
 const maxDailyLogUploads = 50;

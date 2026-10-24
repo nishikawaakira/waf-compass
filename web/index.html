@@ -120,6 +120,7 @@
           <label class="choice"><input type="checkbox" name="attack" value="ssrf"><span data-attack-name="ssrf">SSRF</span></label>
           <label class="choice"><input type="checkbox" name="attack" value="xxe"><span data-attack-name="xxe">XXE</span></label>
           <label class="choice"><input type="checkbox" name="attack" value="ssti"><span data-attack-name="ssti">テンプレートインジェクション</span></label>
+          <label class="choice"><input type="checkbox" name="attack" value="php2shell"><span data-attack-name="php2shell">PHP2Shell</span></label>
         </div>
       </fieldset>
       <p id="attack-scope" class="muted"><span data-i18n="owaspScope">固定ケースは主に A01 の SSRF・パストラバーサルと A05 のインジェクションを扱います。その他の Top 10 リスクはアプリケーション側の検証が必要です。</span> <a href="https://top10.owasp.org/2025/0x00_2025-Introduction/" target="_blank" rel="noopener noreferrer">OWASP Top 10:2025</a></p>
@@ -198,15 +199,17 @@
       termsLink: '利用規約', privacyLink: 'プライバシーポリシー', agreementStart: '', agreementMiddle: 'に同意し、', agreementEnd: 'を確認しました。', agreementError: '利用規約への同意を確認してください。',
       newEvaluation: '新しい評価', ruleKind: '評価の種類', awsWafOption: 'AWS WAF（ルール定義の静的レビュー）', modsecurityOption: 'ModSecurity（隔離環境で実行テスト）', trafficOption: 'アクセスログから AWS WAF ルール候補を提案', logFormat: 'アクセスログの形式',
       ruleFile: 'アップロードファイル', fileHelp: 'AWS WAF は GetWebACL JSON、ModSecurity は展開済みルール（各 1 MiB 以下）、ログ解析は選択した形式の UTF-8 テキスト（50 MiB 以下）を指定してください。',
-      attackTypes: '試したい攻撃の種類', owaspScope: '固定ケースは主に A01 の SSRF・パストラバーサルと A05 のインジェクションを扱います。その他の Top 10 リスクはアプリケーション側の検証が必要です。', notice: '複数選んでも評価は1日1回分です。AWS WAF の静的レビューは実際の遮断確認ではありません。ModSecurity は Apache 用 ModSecurity 2 の隔離環境で固定ケースを測定します。本番が ModSecurity 3 などの場合、動作が異なる可能性があります。OWASP Top 10 全体の網羅やアプリケーションの安全性は証明できません。',
-      logNotice: 'ログには IP アドレスや URL のクエリなどが含まれます。不要な情報を削除してからアップロードしてください。分析は候補の提案であり、攻撃や遮断の証明ではありません。候補は Count モードで検証してください。',
+      attackTypes: '試したい攻撃の種類', owaspScope: '固定ケースは主に A01 の SSRF・パストラバーサルと A05 のインジェクションを扱います。PHP2Shell は無害な形式のサンプルだけを使い、PHP 本体の脆弱性は実行しません。', notice: '複数選んでも評価は1日1回分です。AWS WAF の静的レビューは実際の遮断確認ではありません。ModSecurity は Apache 用 ModSecurity 2 の隔離環境で固定ケースを測定します。本番が ModSecurity 3 などの場合、動作が異なる可能性があります。PHP2Shell の防御や OWASP Top 10 全体の網羅は証明できません。',
+      logNotice: 'ログには IP アドレスや URL のクエリなどが含まれます。不要な情報を削除してからアップロードしてください。PHP2Shell 関連の件数は要調査の手掛かりであり、本文のないログから攻撃や遮断は確定できません。候補は Count モードで検証してください。',
       submit: '評価する', report: '評価結果', summary: '結果の要約', assessment: 'ルールの分析', noAssessment: '分析文はありません。',
       case: 'ケース', expected: '期待', http: 'HTTP', result: '結果', matchedRule: '発火ルール ID', block: '遮断', allow: '通過', match: '一致', mismatch: '不一致',
       passed: '固定ケースは期待どおり', failed: '期待と異なるケースあり', inconclusive: '測定できませんでした', unverified: '実測していません', unknown: '結果不明',
       engine: '測定環境', badURL: '不正な結果 URL です。', resultError: '結果取得に失敗しました', evaluationFailed: '評価に失敗しました。', timeout: '評価が時間内に完了しませんでした。',
       fileError: 'ルールは 1 MiB、アクセスログは 50 MiB 以下のファイルを指定してください。', categoryError: '攻撃の種類を1つ以上選んでください。', formatError: 'ログフォーマットが違います。', turnstileError: 'ボット対策の確認が完了していません。',
       accepting: '評価を受け付けています…', uploading: 'アクセスログをアップロードしています…', uploadError: 'アップロードに失敗しました', acceptError: '受付に失敗しました', missingURL: '結果 URL が返されませんでした。', evaluating: '評価中です…', complete: '評価が完了しました。',
-      names: {sqli: 'SQL インジェクション', xss: 'クロスサイトスクリプティング', path_traversal: 'パストラバーサル', cmdi: 'コマンドインジェクション', ssrf: 'SSRF', xxe: 'XXE', ssti: 'テンプレートインジェクション'},
+      phpReviewTitle: 'PHP2Shell 対策の静的確認', phpManagedFound: 'AWS PHP マネージドルール群', phpManagedMissing: 'AWS PHP マネージドルール群は、この定義から確認できません。', phpCustomRules: '関連するカスタムルール', phpPriorAllow: '前に評価される Allow ルール', phpScopeDown: 'マネージドルール群に適用範囲の制限があります。', phpRuleCaution: '設定の確認であり、実際の遮断や PHP の修正状態は証明しません。', phpLogTitle: 'PHP2Shell 関連の要調査指標', phpLogCaution: 'URL の文字列や 5xx 応答だけでは PHP2Shell の攻撃と断定できません。',
+      phpCoverage: {configured_block: 'Block に設定（実測未確認）', count_only: 'Count のため遮断しない', nonblocking_override: '遮断しない上書き設定', not_visible: '対応するルールを確認できない'},
+      names: {sqli: 'SQL インジェクション', xss: 'クロスサイトスクリプティング', path_traversal: 'パストラバーサル', cmdi: 'コマンドインジェクション', ssrf: 'SSRF', xxe: 'XXE', ssti: 'テンプレートインジェクション', php2shell: 'PHP2Shell（PHP コアの脆弱性）'},
     },
     en: {
       pageTitle: 'WAF Compass', intro: 'Review AWS WAF and ModSecurity rules, their order, and bounded test results.',
@@ -220,15 +223,17 @@
       termsLink: 'Terms of Service', privacyLink: 'Privacy Policy', agreementStart: 'I agree to the ', agreementMiddle: ' and have read the ', agreementEnd: '.', agreementError: 'Please accept the Terms of Service.',
       newEvaluation: 'New evaluation', ruleKind: 'Evaluation type', awsWafOption: 'AWS WAF (static rule review)', modsecurityOption: 'ModSecurity (isolated execution test)', trafficOption: 'Suggest AWS WAF rules from access logs', logFormat: 'Access log format',
       ruleFile: 'Upload file', fileHelp: 'Provide GetWebACL JSON or flattened ModSecurity rules (up to 1 MiB), or UTF-8 text in the selected access-log format (up to 50 MiB).',
-      attackTypes: 'Attack types to test', owaspScope: 'The fixed samples mainly address SSRF and path traversal under A01, and injection patterns under A05. Other Top 10 risks require application-level testing.', notice: 'Selecting multiple types still counts as one daily evaluation. AWS WAF static review does not verify blocking. ModSecurity samples run in an isolated Apache/ModSecurity 2 testbed; production ModSecurity 3 may behave differently. This does not prove coverage of the entire OWASP Top 10 or application security.',
-      logNotice: 'Logs may contain IP addresses and URL queries. Remove unnecessary data before upload. This suggests rule candidates; it does not prove attacks or blocking. Test candidates in Count mode.',
+      attackTypes: 'Attack types to test', owaspScope: 'The fixed samples mainly address SSRF and path traversal under A01, and injection patterns under A05. PHP2Shell uses inert format samples only; it does not execute a PHP vulnerability.', notice: 'Selecting multiple types still counts as one daily evaluation. AWS WAF static review does not verify blocking. ModSecurity samples run in an isolated Apache/ModSecurity 2 testbed; production ModSecurity 3 may behave differently. This does not prove PHP2Shell protection or coverage of the entire OWASP Top 10.',
+      logNotice: 'Logs may contain IP addresses and URL queries. Remove unnecessary data before upload. PHP2Shell-related counts are triage leads; logs without request bodies cannot confirm an attack or blocking. Test candidates in Count mode.',
       submit: 'Evaluate', report: 'Evaluation result', summary: 'Summary', assessment: 'Rule analysis', noAssessment: 'No analysis was returned.',
       case: 'Case', expected: 'Expected', http: 'HTTP', result: 'Result', matchedRule: 'Matched rule IDs', block: 'Block', allow: 'Allow', match: 'Match', mismatch: 'Mismatch',
       passed: 'Fixed samples matched expectations', failed: 'Some samples differed', inconclusive: 'Could not measure', unverified: 'Not executed', unknown: 'Unknown result',
       engine: 'Testbed', badURL: 'Invalid result URL.', resultError: 'Could not retrieve result', evaluationFailed: 'Evaluation failed.', timeout: 'Evaluation did not finish in time.',
       fileError: 'Choose a rules file up to 1 MiB or an access log up to 50 MiB.', categoryError: 'Select at least one attack type.', formatError: 'The log format does not match the selected format.', turnstileError: 'Bot verification is not complete.',
       accepting: 'Submitting evaluation…', uploading: 'Uploading access log…', uploadError: 'Upload failed', acceptError: 'Submission failed', missingURL: 'No result URL was returned.', evaluating: 'Evaluating…', complete: 'Evaluation complete.',
-      names: {sqli: 'SQL injection', xss: 'Cross-site scripting', path_traversal: 'Path traversal', cmdi: 'Command injection', ssrf: 'SSRF', xxe: 'XXE', ssti: 'Server-side template injection'},
+      phpReviewTitle: 'PHP2Shell rule configuration review', phpManagedFound: 'AWS PHP managed rule group', phpManagedMissing: 'The AWS PHP managed rule group is not visible in this snapshot.', phpCustomRules: 'Related custom rules', phpPriorAllow: 'Earlier Allow rules', phpScopeDown: 'The managed rule group has a scope-down statement.', phpRuleCaution: 'This is a configuration review; it does not prove blocking or PHP patch status.', phpLogTitle: 'PHP2Shell-related triage signals', phpLogCaution: 'URL strings and 5xx responses alone cannot establish a PHP2Shell attack.',
+      phpCoverage: {configured_block: 'Configured to Block (not measured)', count_only: 'Count only; does not block', nonblocking_override: 'Nonblocking override', not_visible: 'No corresponding rule visible'},
+      names: {sqli: 'SQL injection', xss: 'Cross-site scripting', path_traversal: 'Path traversal', cmdi: 'Command injection', ssrf: 'SSRF', xxe: 'XXE', ssti: 'Server-side template injection', php2shell: 'PHP2Shell (PHP core vulnerabilities)'},
     },
   };
   const t = key => messages[language.value][key];
@@ -294,6 +299,33 @@
     const summary = document.createElement('p');
     summary.textContent = data.summary || '';
     report.append(summaryTitle, summary);
+    if (data.php2shell_review) {
+      const review = data.php2shell_review;
+      const section = document.createElement('div'); section.className = 'result';
+      const title = document.createElement('h3'); title.textContent = t('phpReviewTitle'); section.append(title);
+      const lines = [
+        review.managed_rule_present ? `${t('phpManagedFound')}: ${review.managed_version || 'Default'}` : t('phpManagedMissing'),
+        `CVE-2026-109618: ${t('phpCoverage')[review.cve_2026_109618] || t('phpCoverage').not_visible}`,
+        `CVE-2026-109619: ${t('phpCoverage')[review.cve_2026_109619] || t('phpCoverage').not_visible}`,
+      ];
+      if (review.custom_rule_names?.length) lines.push(`${t('phpCustomRules')}: ${review.custom_rule_names.join(', ')}`);
+      if (review.prior_allow_rules?.length) lines.push(`${t('phpPriorAllow')}: ${review.prior_allow_rules.join(', ')}`);
+      if (review.scope_down_present) lines.push(t('phpScopeDown'));
+      lines.push(t('phpRuleCaution'));
+      for (const line of lines) { const p = document.createElement('p'); p.textContent = line; section.append(p); }
+      report.append(section);
+    }
+    if (data.log_stats) {
+      const stats = data.log_stats;
+      const section = document.createElement('div'); section.className = 'result';
+      const title = document.createElement('h3'); title.textContent = t('phpLogTitle'); section.append(title);
+      const details = document.createElement('p');
+      details.textContent = language.value === 'ja'
+        ? `URL 上の関連文字列: ${stats.php2shell_url_markers || 0}件。PHP 宛て POST の 5xx 応答: ${stats.php_post_server_errors || 0}件（PHP 宛て POST は ${stats.php_post_requests || 0}件）。`
+        : `Related URL markers: ${stats.php2shell_url_markers || 0}. PHP POST 5xx responses: ${stats.php_post_server_errors || 0} (out of ${stats.php_post_requests || 0} PHP POST requests).`;
+      const caution = document.createElement('p'); caution.className = 'muted'; caution.textContent = t('phpLogCaution');
+      section.append(details, caution); report.append(section);
+    }
     for (const group of data.attack_results || []) {
       const block = document.createElement('div');
       block.className = 'result';
